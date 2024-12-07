@@ -1,0 +1,1 @@
+Stock trading tool that visually analyzes patterns in stocks, and uses this to predict future movement. 
