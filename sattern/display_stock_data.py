@@ -1,20 +1,21 @@
 from matplotlib import pyplot
 import matplotlib.dates as mdates
 from datetime import datetime
-import sattern.get_stock_data as get_stock_data
+from sattern.get_stock_data import history_data
 
 """display_stock_data.py
 
 All stock visualization and graphing is done here. 
 """
 
-def display_pattern(start_time: str, end_time: str):
-    pass
+def highlight_pattern(data: history_data, start_index: int, end_index: int):
+    fig, ax = display_stock_price(data=data, show=False)
+
+    ax.axvspan(start_index, end_index, color="blue", alpha=0.3)
+    pyplot.show()
 
 
-def display_stock_price(ticker: str = "AAPL", period: str = "1mo"):
-    data = get_stock_data.load_history_data(ticker, period)
-    
+def display_stock_price(data: history_data, show: bool = True):
     # Create a figure and axes
     fig, ax = pyplot.subplots()
     
@@ -33,12 +34,13 @@ def display_stock_price(ticker: str = "AAPL", period: str = "1mo"):
     # Set labels and title
     ax.set_xlabel('Data Points')
     ax.set_ylabel('Close Value')
-    ax.set_title(f'Stock Price Plot ({period})')
+    ax.set_title(f'Stock Price Plot ({data.period})')
     
     # Adjust layout to prevent label cutoff
     fig.tight_layout()
     
-    # Show the plot
-    pyplot.show()
+    # Show the plot only if specified
+    if show:
+        pyplot.show()
 
     return fig, ax

@@ -16,6 +16,8 @@ regardless of the API.
 
 class history_data:
     def __init__(self):
+        self.ticker: str
+        self.period: int
         self.date: List[int] = []
         self.open: List[float] = []
         self.high: List[float] = []
@@ -73,6 +75,8 @@ def load_history_data(ticker: str = "AAPL", period: str = "1mo", file_path: str 
 
     return_data = history_data()
     for date, data in history.items():
+        return_data.ticker = ticker
+        return_data.period = period
         return_data.date.append(date)
         return_data.open.append(data['Open'])
         return_data.high.append(data['High'])
