@@ -5,8 +5,12 @@ import sattern.get_stock_data as get_stock_data
 
 """display_stock_data.py
 
-All stock visualization will goes here. Expects a json as formatted by get_stock_data.py.
+All stock visualization and graphing is done here. 
 """
+
+def display_pattern(start_time: str, end_time: str):
+    pass
+
 
 def display_stock_price(ticker: str = "AAPL", period: str = "1mo"):
     data = get_stock_data.load_history_data(ticker, period)
@@ -18,7 +22,7 @@ def display_stock_price(ticker: str = "AAPL", period: str = "1mo"):
     x_values = range(len(data.date))
     
     # Plot the data
-    ax.plot(x_values, data.close, marker='o')
+    ax.plot(x_values, data.close)
     
     # Optionally set custom x-tick labels to display dates at specific intervals
     tick_positions = x_values[::5]  # Adjust the step as needed
@@ -36,3 +40,5 @@ def display_stock_price(ticker: str = "AAPL", period: str = "1mo"):
     
     # Show the plot
     pyplot.show()
+
+    return fig, ax
