@@ -9,7 +9,7 @@ from typing import List
 
 All stock visualization and graphing is done here."""
 
-def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.0):
+def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.0, color: str = "blue"):
     """highlight_pattern
     Args:
     Returns:
@@ -21,7 +21,7 @@ def highlight_pattern(history_data: history_data, extracted_data: extracted_data
         if (end == extracted_data.end_indicies[-1]):
             ax.axvspan(start, end, color="red", alpha=0.3)
         elif (abs(difference) >= min_confidence):
-            ax.axvspan(start, end, color="blue", alpha=(abs(difference) / 2))
+            ax.axvspan(start, end, color=color, alpha=(abs(difference) / 2))
 
     pyplot.show()
 
