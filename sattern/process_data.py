@@ -6,16 +6,38 @@ from sattern.get_stock_data import history_data
 All data processing will originate in here."""
 
 class extracted_data:
+    """
+    A class used to represent extracted data with start and end indices and their differences.
+    Attributes
+    ----------
+    start_indicies : List[int]
+        A list to store the starting indices.
+    end_indicies : List[int]
+        A list to store the ending indices.
+    difference : List[float]
+        A list to store the differences between start and end indices.
+    Methods
+    -------
+    __init__():
+        Initializes the extracted_data class with empty lists for start_indicies, end_indicies, and difference.
+    """
+
     def __init__(self):
         self.start_indicies: List[int] = []
         self.end_indicies: List[int] = []
         self.difference: List[float] = []
 
 def extract_curves(data: history_data, max_deviance: int = 20, period: int = 100, granularity: int = 1) -> extracted_data:
-    """
-    Core functionality of sattern will occur here.
+    """extract_curves
+    Args:
+        data (history_data): The historical stock data containing closing prices.
+        max_deviance (int): The maximum allowed deviance for a pattern match. Defaults to 20.
+        period (int): The period over which to compare stock movements. Defaults to 100.
+        granularity (int): The step size for the sliding window comparison. Defaults to 1.
+    Returns:
+        extracted_data: An object containing the start indices, end indices, and differences of the extracted patterns.
+    
     Extracts pattern data by comparing past stock movement to current stock movement and predicting the next moves.
-    Increments over the data in periods of size period.
     """
     if (granularity > period):
         return
@@ -26,15 +48,11 @@ def extract_curves(data: history_data, max_deviance: int = 20, period: int = 100
     comp_end = len(data.close) - 1
     comp_start = comp_end - period
 
-    # Start running the 'sliding window' comparison with older data
-    """
-    Create a running average queue, searching through programatically until getting a good match.
-    """
+    # Start the running comparison here
     curr_length = 0
     difference = 0
     curr_start = 0
     i = 0
-    # for i in range(0, comp_start - (period + granularity), granularity):
     while (i < (comp_start - (period + granularity))):
         curr_diff = (data.close[comp_start + curr_length + granularity] - data.close[comp_start + curr_length]) - (data.close[curr_start + curr_length + granularity] - data.close[curr_start + curr_length])
         difference += curr_diff * abs(curr_diff)    # Square but keep the sign

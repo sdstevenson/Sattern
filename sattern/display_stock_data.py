@@ -10,6 +10,10 @@ from typing import List
 All stock visualization and graphing is done here."""
 
 def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.0):
+    """highlight_pattern
+    Args:
+    Returns:
+    """
     fig, ax = display_stock_price(data=history_data, show=False)
 
     for start, end, difference in zip(extracted_data.start_indicies, extracted_data.end_indicies, extracted_data.difference):
@@ -23,6 +27,14 @@ def highlight_pattern(history_data: history_data, extracted_data: extracted_data
 
 
 def display_stock_price(data: history_data, show: bool = True):
+    """display_stock_price
+    Args:
+        data (history_data): The historical stock data to be plotted.
+        show (bool): Whether to display the plot immediately. Defaults to True.
+    Returns:
+        tuple: A tuple containing the figure and axes objects of the plot.
+    This function plots the historical stock data provided and optionally displays the plot.
+    """
     # Create a figure and axes
     fig, ax = pyplot.subplots()
     
