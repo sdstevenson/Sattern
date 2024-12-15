@@ -9,50 +9,56 @@ class extracted_data:
     def __init__(self):
         self.start_indicies: List[int] = []
         self.end_indicies: List[int] = []
-        self.difference: List[int] = []
+        self.difference: List[float] = []
 
-def extract_curves(data: history_data, max_deviance: int = 13, period: int = 200) -> extracted_data:
+def extract_curves(data: history_data, max_deviance: int = 20, period: int = 100, granularity: int = 1) -> extracted_data:
     """
     Core functionality of sattern will occur here.
     Extracts pattern data by comparing past stock movement to current stock movement and predicting the next moves.
+    Increments over the data in periods of size period.
     """
+    if (granularity > period):
+        return
+
     return_data = extracted_data()
 
-    # Calculate the indices of the most recent period we are looking at
-    curr_end = len(data.close)
-    curr_start = curr_end - period
-
-    # print(f"curr start: {curr_start}, curr_end: {curr_end}\n")
+    # Calculate the indices of the period we are comparing to (most recent <period> elements)
+    comp_end = len(data.close) - 1
+    comp_start = comp_end - period
 
     # Start running the 'sliding window' comparison with older data
-    for i in range(0, curr_start - period, period // 2):
-        difference = 0
-
-        # Compare every fifth index
-        for x in range(0, period - 10, 5):
-            current_idx = i + x
-            reference_idx = curr_start + x
-            
-            # Bounds checking
-            if reference_idx + 5 >= curr_end or current_idx + 5 >= curr_end:
-                difference = 10000
-                break
-
-            # Calculate difference between patterns
-            difference += (data.close[reference_idx] - data.close[reference_idx + 5]) - (data.close[current_idx] - data.close[current_idx + 5])
-            if abs(difference) > max_deviance:
-                break
-
-        # Check that we are not out of bounds and that the difference isnt larger than the deviance
-        if (abs(difference) <= max_deviance) and ((i + period) < curr_end):
-            # print(f"Data added from {i} to {i+period}")
-            return_data.start_indicies.append(i)
-            return_data.end_indicies.append(i + period)
-            return_data.difference.append(difference)
+    """
+    Create a running average queue, searching through programatically until getting a good match.
+    """
+    curr_length = 0
+    difference = 0
+    curr_start = 0
+    i = 0
+    # for i in range(0, comp_start - (period + granularity), granularity):
+    while (i < (comp_start - (period + granularity))):
+        curr_diff = (data.close[comp_start + curr_length + granularity] - data.close[comp_start + curr_length]) - (data.close[curr_start + curr_length + granularity] - data.close[curr_start + curr_length])
+        difference += curr_diff * abs(curr_diff)    # Square but keep the sign
+        curr_length = curr_length + 1
+        i = i + granularity
+        if abs(difference) > max_deviance: 
+            i = curr_start + granularity
+            difference = 0
+            curr_start = i
+            curr_length = 0
+        elif curr_length >= period:
+            return_data.start_indicies.append(curr_start)
+            return_data.end_indicies.append(curr_start + period)
+            return_data.difference.append(difference / max_deviance)    # Get confidence as a percentage
+            i = curr_start + int(period / 2)
+            # i = curr_start + period
+            difference = 0
+            curr_start = i
+            curr_length = 0
 
     # Finally, append the most recent pattern to the end
-    return_data.start_indicies.append(curr_start)
-    return_data.end_indicies.append(curr_end)
+    return_data.start_indicies.append(comp_start)
+    return_data.end_indicies.append(comp_end)
+    return_data.difference.append(0)
 
     return return_data
 

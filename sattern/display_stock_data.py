@@ -2,18 +2,22 @@ from matplotlib import pyplot
 import matplotlib.dates as mdates
 from datetime import datetime
 from sattern.get_stock_data import history_data
+from sattern.process_data import extracted_data
 from typing import List
 
 """display_stock_data.py
 
 All stock visualization and graphing is done here."""
 
-def highlight_pattern(data: history_data, start_indicies: List[int], end_indicies: List[int]):
-    fig, ax = display_stock_price(data=data, show=False)
+def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.0):
+    fig, ax = display_stock_price(data=history_data, show=False)
 
-    for start, end in zip(start_indicies, end_indicies):
-        color = "red" if end == end_indicies[-1] else "blue"
-        ax.axvspan(start, end, color=color, alpha=0.3)
+    for start, end, difference in zip(extracted_data.start_indicies, extracted_data.end_indicies, extracted_data.difference):
+        # print(f"Start: {start}, End: {end}, Difference: {difference}")
+        if (end == extracted_data.end_indicies[-1]):
+            ax.axvspan(start, end, color="red", alpha=0.3)
+        elif (abs(difference) >= min_confidence):
+            ax.axvspan(start, end, color="blue", alpha=(abs(difference) / 2))
 
     pyplot.show()
 
