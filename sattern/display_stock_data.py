@@ -1,16 +1,28 @@
 from matplotlib import pyplot
 import matplotlib.dates as mdates
 from datetime import datetime
-import sattern.get_stock_data as get_stock_data
+from sattern.get_stock_data import history_data
+from sattern.process_data import extracted_data
+from typing import List
 
 """display_stock_data.py
 
-All stock visualization will goes here. Expects a json as formatted by get_stock_data.py.
-"""
+All stock visualization and graphing is done here."""
 
-def display_stock_price(ticker: str = "AAPL", period: str = "1mo"):
-    data = get_stock_data.load_history_data(ticker, period)
-    
+def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.0):
+    fig, ax = display_stock_price(data=history_data, show=False)
+
+    for start, end, difference in zip(extracted_data.start_indicies, extracted_data.end_indicies, extracted_data.difference):
+        # print(f"Start: {start}, End: {end}, Difference: {difference}")
+        if (end == extracted_data.end_indicies[-1]):
+            ax.axvspan(start, end, color="red", alpha=0.3)
+        elif (abs(difference) >= min_confidence):
+            ax.axvspan(start, end, color="blue", alpha=(abs(difference) / 2))
+
+    pyplot.show()
+
+
+def display_stock_price(data: history_data, show: bool = True):
     # Create a figure and axes
     fig, ax = pyplot.subplots()
     
@@ -18,10 +30,16 @@ def display_stock_price(ticker: str = "AAPL", period: str = "1mo"):
     x_values = range(len(data.date))
     
     # Plot the data
-    ax.plot(x_values, data.close, marker='o')
+    ax.plot(x_values, data.close)
     
-    # Optionally set custom x-tick labels to display dates at specific intervals
-    tick_positions = x_values[::5]  # Adjust the step as needed
+    # Adjust the x-tick labels to display dates at specific intervals
+    if (data.period == "1mo"):
+        tick_positions = x_values[::10]
+    elif (data.period == "1y"):
+        tick_positions = x_values[::100]
+    else:
+        tick_positions = x_values[::500]
+
     tick_labels = [datetime.fromtimestamp(int(data.date[i])).strftime('%m-%d') for i in tick_positions]
     ax.set_xticks(tick_positions)
     ax.set_xticklabels(tick_labels, rotation=45, ha='right')
@@ -29,10 +47,13 @@ def display_stock_price(ticker: str = "AAPL", period: str = "1mo"):
     # Set labels and title
     ax.set_xlabel('Data Points')
     ax.set_ylabel('Close Value')
-    ax.set_title(f'Stock Price Plot ({period})')
+    ax.set_title(f'{data.ticker} Stock Price Plot ({data.period})')
     
     # Adjust layout to prevent label cutoff
     fig.tight_layout()
     
-    # Show the plot
-    pyplot.show()
+    # Show the plot only if specified
+    if show:
+        pyplot.show()
+
+    return fig, ax
