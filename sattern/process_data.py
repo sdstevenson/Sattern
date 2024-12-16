@@ -10,16 +10,16 @@ class extracted_data:
     A class used to represent extracted data with start and end indices and their differences.
     Attributes
     ----------
-    start_indicies : List[int]
-        A list to store the starting indices.
-    end_indicies : List[int]
-        A list to store the ending indices.
-    difference : List[float]
-        A list to store the differences between start and end indices.
+        start_indicies : List[int]
+            A list to store the starting indices.
+        end_indicies : List[int]
+            A list to store the ending indices.
+        difference : List[float]
+            A list to store the differences between start and end indices.
     Methods
     -------
-    __init__():
-        Initializes the extracted_data class with empty lists for start_indicies, end_indicies, and difference.
+        __init__():
+            Initializes the extracted_data class with empty lists for start_indicies, end_indicies, and difference.
     """
 
     def __init__(self):
@@ -81,3 +81,21 @@ def extract_curves(data: history_data, max_deviance: int = 20, period: int = 100
     return return_data
 
 
+def predict_next_movement(data: history_data, extracted_data: extracted_data, period: int = 100):
+    # Well take in a extracted_data object, containing all the similar periods of the stock. 
+    # For each similar period, average the next period data points
+    averaged_difference: List[int] = []
+    for i in range(0, len(extracted_data.end_indicies) - 2):
+        # Calculate an average value over the next period
+        sum = 0
+        for x in range(0, period):
+            sum += data.close[extracted_data.start_indicies[i] + x]
+        averaged_difference.append(data.close[i] - (sum / period))
+        # Print the average for each period
+        # print(f"{i}: {averaged_values[-1]}\n")
+    # Combine the next period averages into one number weighted by confidence
+    overall_difference: int = 0
+    for i in range(0, len(averaged_difference)):
+        overall_difference += averaged_difference[i] * extracted_data.difference[i]
+    # Print this
+    print(data.close[-1] + (overall_difference / period))
