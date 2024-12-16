@@ -1,9 +1,7 @@
 import yfinance as yf
 import json
-import pprint
 import os
 from pathlib import Path
-import pandas as pd
 from typing import List
 
 """get_stock_data.py
@@ -24,21 +22,22 @@ class history_data:
         self.low: List[float] = []
         self.close: List[float] = []
 
-def store_history_data(ticker: str = "AAPL", period: str = "1mo", interval: str = "1h", save_to_file: bool = True):
+def store_history_data(ticker: str = "AAPL", period: str = "1y", save_to_file: bool = True):
     """
     Collect and store historical stock data for a given ticker symbol.
     This function retrieves historical stock data for a specified ticker symbol, period, and interval.
     The data is then filtered to include only the 'Open', 'High', 'Low', and 'Close' columns.
     Optionally, the filtered data can be saved to a JSON file.
+
     Args:
         ticker (str): The stock ticker symbol to retrieve data for. Default is "AAPL".
-        period (str): The period over which to retrieve historical data. Default is "1mo".
-        interval (str): The interval at which to retrieve historical data. Default is "1h".
+        period (str): The period over which to retrieve historical data. Default is "1y".
         save_to_file (bool): Whether to save the filtered data to a JSON file. Default is True.
     Returns:
         data (yf.Ticker): The yfinance Ticker object containing the stock data.
 
     """
+    interval = "1h"     # Default to this for now
     print(f"Collecting {ticker} stock data. Period: {period}. Interval: {interval}")
     data = yf.Ticker(ticker)
     historical_data = data.history(period=period, interval=interval)
@@ -62,8 +61,18 @@ def store_history_data(ticker: str = "AAPL", period: str = "1mo", interval: str 
 
     return data
 
-def load_history_data(ticker: str = "AAPL", period: str = "1mo", file_path: str = None) -> history_data:
-    """Returns stock history data as a list of lists, each sublist containing data like 'Open', 'High', ...'"""
+def load_history_data(ticker: str = "AAPL", period: str = "1y", file_path: str = None) -> history_data:
+    """
+    Reads stock data from a json (as formatted by store_history_data).
+    Converts data to a history_data object
+    
+    Args:
+        ticker (str): The stock ticker to retrieve data for. Default is "AAPL".
+        period (str): The period over which the data was recieved. Default is "1y".
+        file_path (str): Optional file path to specify a data file to read from. Default is None.
+    Returns:
+        history_data: history_data object holding relevent stock data.
+    """
     if (not file_path or not os.path.exists(file_path)):
         file_path = f'{Path("./sattern/data")}/{ticker}_{period}_history_data.json'
     if os.path.exists(file_path):
@@ -74,9 +83,9 @@ def load_history_data(ticker: str = "AAPL", period: str = "1mo", file_path: str 
         return
 
     return_data = history_data()
+    return_data.ticker = ticker
+    return_data.period = period
     for date, data in history.items():
-        return_data.ticker = ticker
-        return_data.period = period
         return_data.date.append(date)
         return_data.open.append(data['Open'])
         return_data.high.append(data['High'])

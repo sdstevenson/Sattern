@@ -10,9 +10,15 @@ from typing import List
 All stock visualization and graphing is done here."""
 
 def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.0, color: str = "blue"):
-    """highlight_pattern
+    """
+    Highlights selected curves on the plot with the color specified. Most recent data is highlighted red.
     Args:
+        history_data (history_data): All relevent stock data.
+        extracted_data (extracted_data): Periods to highlight.
+        min_confidence (int): Minimum confidence at which to highlight stock curve. Default is "0.0".
+        color (str): Color to highlight periods. Default is "blue".
     Returns:
+        None
     """
     fig, ax = display_stock_price(data=history_data, show=False)
 
@@ -26,11 +32,11 @@ def highlight_pattern(history_data: history_data, extracted_data: extracted_data
     pyplot.show()
 
 
-def display_stock_price(data: history_data, show: bool = True):
-    """display_stock_price
+def display_stock_price(data: history_data):
+    """
+    Plots stock data.
     Args:
-        data (history_data): The historical stock data to be plotted.
-        show (bool): Whether to display the plot immediately. Defaults to True.
+        data (history_data): All relevent stock data.
     Returns:
         tuple: A tuple containing the figure and axes objects of the plot.
     This function plots the historical stock data provided and optionally displays the plot.
@@ -64,8 +70,6 @@ def display_stock_price(data: history_data, show: bool = True):
     # Adjust layout to prevent label cutoff
     fig.tight_layout()
     
-    # Show the plot only if specified
-    if show:
-        pyplot.show()
+    pyplot.show()
 
     return fig, ax
