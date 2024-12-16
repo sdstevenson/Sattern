@@ -9,6 +9,8 @@ class extracted_data:
     def __init__(self):
         self.start_indicies: List[int] = []
         self.end_indicies: List[int] = []
+        self.final_start: int
+        self.final_end: int
         self.difference: List[float] = []
 
 def extract_curves(data: history_data, max_deviance: int = 20, comp_period: int = 10, granularity: int = 1) -> extracted_data:
@@ -57,9 +59,9 @@ def extract_curves(data: history_data, max_deviance: int = 20, comp_period: int 
             curr_start = i
             curr_length = 0
 
-    # Finally, append the most recent pattern to the end
-    return_data.start_indicies.append(comp_start)
-    return_data.end_indicies.append(comp_end)
+    # Finally, store the most recent period
+    return_data.final_start = comp_start
+    return_data.final_end = comp_end
     return_data.difference.append(0)
 
     return return_data

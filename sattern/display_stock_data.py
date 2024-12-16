@@ -20,23 +20,26 @@ def highlight_pattern(history_data: history_data, extracted_data: extracted_data
     Returns:
         None
     """
-    fig, ax = display_stock_price(data=history_data, show=False)
+    fig, ax = display_stock_price(data=history_data)
 
     for start, end, difference in zip(extracted_data.start_indicies, extracted_data.end_indicies, extracted_data.difference):
         # print(f"Start: {start}, End: {end}, Difference: {difference}")
-        if (end == extracted_data.end_indicies[-1]):
-            ax.axvspan(start, end, color="red", alpha=0.3)
-        elif (abs(difference) >= min_confidence):
+        # if (end == extracted_data.end_indicies[-1]):
+        #     ax.axvspan(start, end, color="red", alpha=0.3)
+        # elif (abs(difference) >= min_confidence):
+        if abs(difference) >= min_confidence:
             ax.axvspan(start, end, color=color, alpha=(abs(difference) / 2))
+    ax.axvspan(extracted_data.final_start, extracted_data.final_end, color="red", alpha=0.3)
 
     pyplot.show()
 
 
-def display_stock_price(data: history_data):
+def display_stock_price(data: history_data, show: bool = False):
     """
     Plots stock data.
     Args:
         data (history_data): All relevent stock data.
+        show (bool): Display stock data. Defaults to True.
     Returns:
         tuple: A tuple containing the figure and axes objects of the plot.
     This function plots the historical stock data provided and optionally displays the plot.
@@ -70,6 +73,7 @@ def display_stock_price(data: history_data):
     # Adjust layout to prevent label cutoff
     fig.tight_layout()
     
-    pyplot.show()
+    if show:
+        pyplot.show()
 
     return fig, ax
