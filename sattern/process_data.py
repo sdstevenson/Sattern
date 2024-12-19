@@ -44,7 +44,7 @@ def extract_curves(data: history_data, max_deviance: int = 20, comp_period: int 
         difference += curr_diff * abs(curr_diff)    # Square but keep the sign
         curr_length = curr_length + 1
         i = i + granularity
-        if abs(difference) > max_deviance: 
+        if abs(curr_diff * abs(curr_diff)) > max_deviance or abs(difference) > max_deviance: 
             i = curr_start + granularity
             difference = 0
             curr_start = i
@@ -52,14 +52,13 @@ def extract_curves(data: history_data, max_deviance: int = 20, comp_period: int 
         elif curr_length >= comp_period:
             return_data.start_indicies.append(curr_start)
             return_data.end_indicies.append(curr_start + comp_period)
-            return_data.difference.append(difference / max_deviance)    # Get confidence as a percentage
+            return_data.difference.append(difference / max_deviance)
             i = curr_start + int(comp_period / 2)
-            # i = curr_start + period
             difference = 0
             curr_start = i
             curr_length = 0
 
-    # Finally, store the most recent period
+    # Store the most recent period
     return_data.final_start = comp_start
     return_data.final_end = comp_end
     return_data.difference.append(0)
@@ -78,21 +77,33 @@ def predict_next_movement(data: history_data, extracted_data: extracted_data, co
     Returns:
         None
     """
-    # Well take in a extracted_data object, containing all the similar periods of the stock. 
-    # For each similar period, average the next period data points
-    comp_period = int(comp_period * 7.5)   # Normalize to the number of data points in this period
-    averaged_difference: List[int] = []
-    for i in range(0, len(extracted_data.end_indicies) - 2):
-        # Calculate an average value over the next period
-        sum = 0
-        for x in range(0, comp_period):
-            sum += data.close[extracted_data.start_indicies[i] + x]
-        averaged_difference.append(data.close[i] - (sum / comp_period))
-        # Print the average for each period
-        # print(f"{i}: {averaged_values[-1]}\n")
-    # Combine the next period averages into one number weighted by confidence
-    overall_difference: int = 0
-    for i in range(0, len(averaged_difference)):
-        overall_difference += averaged_difference[i] * extracted_data.difference[i]
-    # Print this
-    print(f"Stock should hit {data.close[-1] + (overall_difference / comp_period)} in {comp_period} business days.")
+    comp_period = int(comp_period * 7.5)   # Days * data points/day
+    averaged_difference: List[float] = []
+
+    """
+    Calculating stock price isntead of stock difference. Recalculate with the same formula, calculating stock difference. 
+    """
+
+    for i in range(comp_period):
+        averaged_difference.append(0.0)
+        for x in range(len(extracted_data.end_indicies)):
+            index = extracted_data.end_indicies[x] + i
+            averaged_difference[i] += (data.close[index] - data.close[index + 1]) * extracted_data.difference[x]
+
+    # Now divide by the overall weights
+    averaged_difference = [price/sum(extracted_data.difference) for price in averaged_difference]
+
+    # And calculate price movements
+    predicted_prices = []
+    for i in range(len(averaged_difference)):
+        if len(predicted_prices) != 0:
+            predicted_prices.append(predicted_prices[i-1] + averaged_difference[i])
+        else:
+            predicted_prices.append(data.close[-1] + averaged_difference[i])
+
+    # Set a generic data value
+    predicted_dates = [data.date[-1] for _ in range(len(predicted_prices))]
+
+    print(f"{data.ticker} will hit {predicted_prices[-1]} in {comp_period/7.5} business days")
+
+    return predicted_dates, predicted_prices
