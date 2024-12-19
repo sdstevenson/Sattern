@@ -24,7 +24,12 @@ def highlight_pattern(history_data: history_data, extracted_data: extracted_data
 
     for start, end, difference in zip(extracted_data.start_indicies, extracted_data.end_indicies, extracted_data.difference):
         if abs(difference) >= min_confidence:
-            ax.axvspan(start, end, color=color, alpha=abs(difference / sum(extracted_data.difference)))
+            ax.axvspan(
+                start, 
+                end, 
+                color=color, 
+                alpha=( (extracted_data.max_difference - abs(difference)) /extracted_data.max_difference )**20/3
+            )
     ax.axvspan(extracted_data.final_start, extracted_data.final_end, color="red", alpha=0.3)
 
     if show:

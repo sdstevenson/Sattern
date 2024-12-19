@@ -11,9 +11,10 @@ class extracted_data:
         self.end_indicies: List[int] = []
         self.final_start: int
         self.final_end: int
+        self.max_difference: int
         self.difference: List[float] = []
 
-def extract_curves(data: history_data, max_deviance: int = 15, comp_period: int = 10, granularity: int = 1) -> extracted_data:
+def extract_curves(data: history_data, max_difference: int = 15, comp_period: int = 10, granularity: int = 1) -> extracted_data:
     """
     Extracts pattern data by comparing past stock movement to current stock movement and predicting the next moves.
     Args:
@@ -29,6 +30,7 @@ def extract_curves(data: history_data, max_deviance: int = 15, comp_period: int 
     comp_period = int(comp_period * 7.5)
 
     return_data = extracted_data()
+    return_data.max_difference = max_difference
 
     # Calculate the indices of the period we are comparing to (most recent <period> elements)
     comp_end = len(data.close) - 1
@@ -50,7 +52,7 @@ def extract_curves(data: history_data, max_deviance: int = 15, comp_period: int 
         # Increment the length of current comparison period and our i index
         curr_length += granularity
         i = i + granularity
-        if (abs(curr_diff * abs(curr_diff)) > max_deviance) or (abs(difference) > max_deviance): 
+        if (abs(curr_diff * abs(curr_diff)) > max_difference) or (abs(difference) > max_difference): 
             # Difference is too great, reset and begin comparing again at curr_start + granularity
             curr_start += granularity
             i = curr_start
