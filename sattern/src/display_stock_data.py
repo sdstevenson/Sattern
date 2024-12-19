@@ -1,8 +1,8 @@
 from matplotlib import pyplot
 import matplotlib.dates as mdates
 from datetime import datetime
-from sattern.get_stock_data import history_data
-from sattern.process_data import extracted_data
+from sattern.src.get_stock_data import history_data
+from sattern.src.process_data import extracted_data
 from typing import List
 
 """display_stock_data.py

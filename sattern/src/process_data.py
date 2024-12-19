@@ -1,5 +1,5 @@
 from typing import List
-from sattern.get_stock_data import history_data
+from sattern.src.get_stock_data import history_data
 
 """process_data.py
 

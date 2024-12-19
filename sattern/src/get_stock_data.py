@@ -56,7 +56,7 @@ def store_history_data(ticker: str = "AAPL", period: str = "1y", save_to_file: b
         # historical_data.index = historical_data.index.strftime('%Y-%m-%d-%H-%M')
         historical_data.index = historical_data.index.astype(int) // 10**9
         filtered_data = historical_data[['Open', 'High', 'Low', 'Close']].to_dict(orient='index')
-        with open(f'{Path("./sattern/data")}/{ticker}_{period}_history_data.json', 'w') as file:
+        with open(f'{Path("./sattern/src/data")}/{ticker}_{period}_history_data.json', 'w') as file:
             json.dump(filtered_data, file, indent=4)
 
     return data
@@ -74,7 +74,7 @@ def load_history_data(ticker: str = "AAPL", period: str = "1y", file_path: str =
         history_data: history_data object holding relevent stock data.
     """
     if (not file_path or not os.path.exists(file_path)):
-        file_path = f'{Path("./sattern/data")}/{ticker}_{period}_history_data.json'
+        file_path = f'{Path("./sattern/src/data")}/{ticker}_{period}_history_data.json'
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             history = json.load(file)

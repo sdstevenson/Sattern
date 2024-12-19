@@ -1,7 +1,7 @@
-import sattern.get_stock_data as get_stock_data
-import sattern.display_stock_data as display_stock_data
-from sattern.get_stock_data import history_data
-import sattern.process_data as process_data
+import sattern.src.get_stock_data as get_stock_data
+import sattern.src.display_stock_data as display_stock_data
+from sattern.src.get_stock_data import history_data
+import sattern.src.process_data as process_data
 import json
 
 def main():
