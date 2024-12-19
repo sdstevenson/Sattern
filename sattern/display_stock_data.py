@@ -9,29 +9,53 @@ from typing import List
 
 All stock visualization and graphing is done here."""
 
-def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.0):
-    fig, ax = display_stock_price(data=history_data, show=False)
+def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.0, color: str = "blue", predicted_dates: List[float] = None, predicted_prices: List[float] = None, show: bool = True):
+    """
+    Highlights selected curves on the plot with the color specified. Most recent data is highlighted red.
+    Args:
+        history_data (history_data): All relevent stock data.
+        extracted_data (extracted_data): Periods to highlight.
+        min_confidence (int): Minimum confidence at which to highlight stock curve. Default is "0.0".
+        color (str): Color to highlight periods. Default is "blue".
+    Returns:
+        None
+    """
+    fig, ax = display_stock_price(data=history_data, predicted_dates=predicted_dates, predicted_prices=predicted_prices)
 
     for start, end, difference in zip(extracted_data.start_indicies, extracted_data.end_indicies, extracted_data.difference):
-        # print(f"Start: {start}, End: {end}, Difference: {difference}")
-        if (end == extracted_data.end_indicies[-1]):
-            ax.axvspan(start, end, color="red", alpha=0.3)
-        elif (abs(difference) >= min_confidence):
-            ax.axvspan(start, end, color="blue", alpha=(abs(difference) / 2))
+        if abs(difference) >= min_confidence:
+            ax.axvspan(start, end, color=color, alpha=(abs(difference) / 2))
+    ax.axvspan(extracted_data.final_start, extracted_data.final_end, color="red", alpha=0.3)
 
-    pyplot.show()
+    if show:
+        pyplot.show()
+
+    return fig, ax
 
 
-def display_stock_price(data: history_data, show: bool = True):
+def display_stock_price(data: history_data, predicted_dates: List[float] = None, predicted_prices: List[float] = None, show: bool = False):
+    """
+    Plots stock data.
+    Args:
+        data (history_data): All relevent stock data.
+        show (bool): Display stock data. Defaults to True.
+    Returns:
+        tuple: A tuple containing the figure and axes objects of the plot.
+    This function plots the historical stock data provided and optionally displays the plot.
+    """
     # Create a figure and axes
     fig, ax = pyplot.subplots()
     
-    # Use the index of the data points for consistent spacing
+    # Plot the actual stock prices
     x_values = range(len(data.date))
-    
-    # Plot the data
     ax.plot(x_values, data.close)
     
+    # Plot predicted prices if provided
+    if predicted_dates and predicted_prices:
+        predicted_x = range(len(data.date), len(data.date) + len(predicted_dates))
+        ax.plot(predicted_x, predicted_prices, color='green', label='Predicted Price')
+
+
     # Adjust the x-tick labels to display dates at specific intervals
     if (data.period == "1mo"):
         tick_positions = x_values[::10]
@@ -52,7 +76,6 @@ def display_stock_price(data: history_data, show: bool = True):
     # Adjust layout to prevent label cutoff
     fig.tight_layout()
     
-    # Show the plot only if specified
     if show:
         pyplot.show()
 
