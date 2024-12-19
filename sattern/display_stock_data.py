@@ -9,7 +9,7 @@ from typing import List
 
 All stock visualization and graphing is done here."""
 
-def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.0, color: str = "blue", predicted_dates: List[float] = None, predicted_prices: List[float] = None, show: bool = True):
+def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.2, color: str = "blue", predicted_dates: List[float] = None, predicted_prices: List[float] = None, show: bool = True):
     """
     Highlights selected curves on the plot with the color specified. Most recent data is highlighted red.
     Args:
@@ -24,7 +24,7 @@ def highlight_pattern(history_data: history_data, extracted_data: extracted_data
 
     for start, end, difference in zip(extracted_data.start_indicies, extracted_data.end_indicies, extracted_data.difference):
         if abs(difference) >= min_confidence:
-            ax.axvspan(start, end, color=color, alpha=(abs(difference) / 2))
+            ax.axvspan(start, end, color=color, alpha=abs(difference / sum(extracted_data.difference)))
     ax.axvspan(extracted_data.final_start, extracted_data.final_end, color="red", alpha=0.3)
 
     if show:
