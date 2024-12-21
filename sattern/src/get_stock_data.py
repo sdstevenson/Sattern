@@ -50,36 +50,33 @@ def store_history_data(ticker: str = "AAPL", period: int = 1, interval: str = "1
     historical_data.index = historical_data.index.astype(int) // 10**9
     filtered_data = historical_data[['Open', 'High', 'Low', 'Close']].to_dict(orient='index')
 
-    with open(f'{Path("./sattern/src/data")}/{ticker}_{period}_history_data.json', 'w') as file:
+    with open(f'{Path("./sattern/src/data")}/{ticker}_{period}y_history_data.json', 'w') as file:
         json.dump(filtered_data, file, indent=4)
-
-    return filtered_data
 
 
 def store_multiple(ticker: List[str], period: str = "1y"):
     for stock in ticker:
         store_history_data(ticker=stock, period=period)
 
-def load_history_data(ticker: str = "AAPL", period: str = "1y", file_path: str = None) -> history_data:
+def load_history_data(ticker: str = "AAPL", period: int = 1, file_path: str = None) -> history_data:
     """
     Reads stock data from a json (as formatted by store_history_data).
     Converts data to a history_data object
     
     Args:
         ticker (str): The stock ticker to retrieve data for. Default is "AAPL".
-        period (str): The period over which the data was recieved. Default is "1y".
+        period (str): The period over which the data was recieved in years. Default is 1.
         file_path (str): Optional file path to specify a data file to read from. Default is None.
     Returns:
         history_data: history_data object holding relevent stock data.
     """
     if (not file_path or not os.path.exists(file_path)):
-        file_path = f'{Path("./sattern/src/data")}/{ticker}_{period}_history_data.json'
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as file:
-            history = json.load(file)
-    else:
+        file_path = f'{Path("./sattern/src/data")}/{ticker}_{period}y_history_data.json'
+    if not os.path.exists(file_path):
         print(f"File {file_path} does not exist.")
-        return
+        store_history_data(ticker=ticker, period=1)
+    with open(file_path, 'r') as file:
+        history = json.load(file)
 
     return_data = history_data()
     return_data.ticker = ticker
