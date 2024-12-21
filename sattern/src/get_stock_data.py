@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from typing import List
+import datetime
 
 """get_stock_data.py
 
@@ -22,7 +23,7 @@ class history_data:
         self.low: List[float] = []
         self.close: List[float] = []
 
-def store_history_data(ticker: str = "AAPL", period: str = "1y", save_to_file: bool = True):
+def store_history_data(ticker: str = "AAPL", period: int = 1, interval: str = "1h"):
     """
     Collect and store historical stock data for a given ticker symbol.
     This function retrieves historical stock data for a specified ticker symbol, period, and interval.
@@ -31,35 +32,33 @@ def store_history_data(ticker: str = "AAPL", period: str = "1y", save_to_file: b
 
     Args:
         ticker (str): The stock ticker symbol to retrieve data for. Default is "AAPL".
-        period (str): The period over which to retrieve historical data. Default is "1y".
-        save_to_file (bool): Whether to save the filtered data to a JSON file. Default is True.
+        period (int): The period over which to retrieve historical data in years. Default is 1.
+        interval (str): The interval between data. Must be > 1h for periods longer than two years. Default is 1d.
     Returns:
-        data (yf.Ticker): The yfinance Ticker object containing the stock data.
-
+        final_data (json): JSON formatted stock data.
     """
-    interval = "1h"     # Default to this for now
-    print(f"Collecting {ticker} stock data. Period: {period}. Interval: {interval}")
-    data = yf.Ticker(ticker)
-    historical_data = data.history(period=period, interval=interval)
-    # historical_data = data.history(period=period)
 
-    # print(f"***Raw data***\n{historical_data}")
+    if period > 2:
+        if interval == "1h":
+            interval = "1d"
 
-    # print(f"***Only relevent columns***\n{historical_data[['Open', 'High', 'Low', 'Close']]}")
+    print(f"Collecting {ticker} stock data. Period: {period}y. Interval: {interval}")
 
-    # Convert Timestamp object to unix time
+    y_finance = yf.Ticker(ticker)
+    historical_data = y_finance.history(period=f"{period}y", interval=interval)
 
-    # print(f"***Filtered data***\n{filtered_data}")
+    historical_data.index = historical_data.index.astype(int) // 10**9
+    filtered_data = historical_data[['Open', 'High', 'Low', 'Close']].to_dict(orient='index')
 
-    # Only filter the data if we are saving it to a file, otherwise just return whatever the API gives us for now.
-    if save_to_file:
-        # historical_data.index = historical_data.index.strftime('%Y-%m-%d-%H-%M')
-        historical_data.index = historical_data.index.astype(int) // 10**9
-        filtered_data = historical_data[['Open', 'High', 'Low', 'Close']].to_dict(orient='index')
-        with open(f'{Path("./sattern/src/data")}/{ticker}_{period}_history_data.json', 'w') as file:
-            json.dump(filtered_data, file, indent=4)
+    with open(f'{Path("./sattern/src/data")}/{ticker}_{period}_history_data.json', 'w') as file:
+        json.dump(filtered_data, file, indent=4)
 
-    return data
+    return filtered_data
+
+
+def store_multiple(ticker: List[str], period: str = "1y"):
+    for stock in ticker:
+        store_history_data(ticker=stock, period=period)
 
 def load_history_data(ticker: str = "AAPL", period: str = "1y", file_path: str = None) -> history_data:
     """
