@@ -101,7 +101,11 @@ def predict_next_movement(data: history_data, extracted_data: extracted_data, co
             averaged_difference[i] += (data.close[index + 1] - data.close[index]) * extracted_data.difference[x]
 
     # Now divide by the overall weights
-    averaged_difference = [price/sum(extracted_data.difference) for price in averaged_difference]
+    total_difference = sum(extracted_data.difference)
+    if total_difference != 0:
+        averaged_difference = [price/total_difference for price in averaged_difference]
+    else:
+        print("Sum of extracted_data.difference is zero, cannot divide by zero.")
 
     # And calculate price movements
     predicted_prices = []
