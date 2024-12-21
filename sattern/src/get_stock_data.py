@@ -54,7 +54,17 @@ def store_history_data(ticker: str = "AAPL", period: int = 1, interval: str = "1
         json.dump(filtered_data, file, indent=4)
 
 
-def store_multiple(ticker: List[str], period: str = "1y"):
+def store_multiple(ticker: List[str], period: int = 1):
+    """
+    Call store_history_data for multiple stocks.
+
+    Args:
+        ticker (List[str]): A list of stock ticker symbols.
+        period (int, optional): The period for which to store the historical data. Defaults to 1.
+    Returns:
+        None
+    """
+
     for stock in ticker:
         store_history_data(ticker=stock, period=period)
 
