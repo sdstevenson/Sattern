@@ -5,7 +5,7 @@ import sattern.src.process_data as process_data
 
 def main():
     # get_stock_data.store_history_data(ticker="ERJ", period="2y")
-    history_data = get_stock_data.load_history_data(ticker="ERJ", period="1y")
+    history_data = get_stock_data.load_history_data(ticker="ERJ", period=1)
     # start_test = [0, 1500]
     # end_test = [10, 1700]
     # display_stock_data.display_stock_price(data=data)
