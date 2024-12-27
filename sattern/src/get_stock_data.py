@@ -13,17 +13,7 @@ Abstracted away to enable use of different api's, the only requirement being thi
 regardless of the API. 
 """
 
-class history_data:
-    def __init__(self):
-        self.ticker: str
-        self.period: int
-        self.date: List[int] = []
-        self.open: List[float] = []
-        self.high: List[float] = []
-        self.low: List[float] = []
-        self.close: List[float] = []
-
-def store_history_data(ticker: str = "AAPL", period: int = 1, interval: str = "1h"):
+def store_stock_data(ticker: str = "AAPL", period: int = 1, interval: str = "1h"):
     """
     Collect and store historical stock data for a given ticker symbol.
     This function retrieves historical stock data for a specified ticker symbol, period, and interval.
@@ -53,7 +43,6 @@ def store_history_data(ticker: str = "AAPL", period: int = 1, interval: str = "1
     with open(f'{Path("./sattern/src/data")}/{ticker}_{period}y_history_data.json', 'w') as file:
         json.dump(filtered_data, file, indent=4)
 
-
 def store_multiple(ticker: List[str], period: int = 1):
     """
     Call store_history_data for multiple stocks.
@@ -66,36 +55,61 @@ def store_multiple(ticker: List[str], period: int = 1):
     """
 
     for stock in ticker:
-        store_history_data(ticker=stock, period=period)
+        store_stock_data(ticker=stock, period=period)
 
-def load_history_data(ticker: str = "AAPL", period: int = 1, file_path: str = None) -> history_data:
-    """
-    Reads stock data from a json (as formatted by store_history_data).
-    Converts data to a history_data object
-    
-    Args:
-        ticker (str): The stock ticker to retrieve data for. Default is "AAPL".
-        period (str): The period over which the data was recieved in years. Default is 1.
-        file_path (str): Optional file path to specify a data file to read from. Default is None.
-    Returns:
-        history_data: history_data object holding relevent stock data.
-    """
-    if (not file_path or not os.path.exists(file_path)):
-        file_path = f'{Path("./sattern/src/data")}/{ticker}_{period}y_history_data.json'
-    if not os.path.exists(file_path):
-        print(f"File {file_path} does not exist.")
-        store_history_data(ticker=ticker, period=1)
-    with open(file_path, 'r') as file:
-        history = json.load(file)
+class stock_data:
+    def __init__(self, ticker: str, period: int = 2):
+        self.ticker: str = ticker
+        self.period: int = period
 
-    return_data = history_data()
-    return_data.ticker = ticker
-    return_data.period = period
-    for date, data in history.items():
-        return_data.date.append(date)
-        return_data.open.append(data['Open'])
-        return_data.high.append(data['High'])
-        return_data.low.append(data['Low'])
-        return_data.close.append(data['Close'])
+        self.date: List[int] = []
+        self.open: List[float] = []
+        self.high: List[float] = []
+        self.low: List[float] = []
+        self.close: List[float] = []
 
-    return return_data
+        # If this stock has been processed yet
+        self.processed: bool = False
+
+        # Now add some values for extracted data
+        self.start_index: int
+        self.end_index: int
+        self.max_difference: int
+        self.start_indicies: List[int] = []
+        self.end_indicies: List[int] = []
+        self.difference: List[float] = []
+
+        # And the stock predictions
+        self.predicted_dates: List[int] = []
+        self.predicted_prices: List[float] = []
+
+        self.load_stock_data()
+
+    def load_stock_data(self, ticker: str = "AAPL", period: int = 1, file_path: str = None):
+        """
+        Reads stock data from a json (as formatted by store_history_data).
+        Converts data to a history_data object
+
+        Args:
+            ticker (str): The stock ticker to retrieve data for. Default is "AAPL".
+            period (str): The period over which the data was recieved in years. Default is 1.
+            file_path (str): Optional file path to specify a data file to read from. Default is None.
+        Returns:
+            history_data: history_data object holding relevent stock data.
+        """
+        if (file_path is None or not os.path.exists(file_path)):
+            file_path = f'{Path("./sattern/src/data")}/{self.ticker}_{self.period}y_history_data.json'
+
+        if not os.path.exists(file_path):
+            print(f"Data for {self.ticker}, period {self.period} does not exist.")
+            store_stock_data(ticker=self.ticker, period=self.period)
+
+        with open(file_path, 'r') as file:
+            history = json.load(file)
+
+        for date, data in history.items():
+            self.date.append(date)
+            self.open.append(data['Open'])
+            self.high.append(data['High'])
+            self.low.append(data['Low'])
+            self.close.append(data['Close'])
