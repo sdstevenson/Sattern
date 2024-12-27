@@ -113,8 +113,6 @@ class stock_data:
         self.high: List[float] = []
         self.low: List[float] = []
         self.close: List[float] = []
-
-        # Comparison data stored in a seperate class
         self.comp: comp_data = comp_data()
 
         self.load_stock_data()
