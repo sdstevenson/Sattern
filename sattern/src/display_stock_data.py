@@ -1,36 +1,33 @@
 from matplotlib import pyplot
 import matplotlib.dates as mdates
 from datetime import datetime
-from sattern.src.get_stock_data import history_data
-from sattern.src.process_data import extracted_data
+from sattern.src.get_stock_data import stock_data
 from typing import List
 
 """display_stock_data.py
 
 All stock visualization and graphing is done here."""
 
-def highlight_pattern(history_data: history_data, extracted_data: extracted_data, min_confidence: float = 0.2, color: str = "blue", predicted_dates: List[float] = None, predicted_prices: List[float] = None, show: bool = True):
+def highlight_pattern(stock_data: stock_data, show: bool = True):
     """
     Highlights selected curves on the plot with the color specified. Most recent data is highlighted red.
     Args:
-        history_data (history_data): All relevent stock data.
-        extracted_data (extracted_data): Periods to highlight.
-        min_confidence (int): Minimum confidence at which to highlight stock curve. Default is "0.0".
-        color (str): Color to highlight periods. Default is "blue".
+        stock_data (stock_data): All relevent stock data.
+        show (bool): Display stock data. Defaults to True.
     Returns:
         None
     """
-    fig, ax = display_stock_price(data=history_data, predicted_dates=predicted_dates, predicted_prices=predicted_prices)
+    fig, ax = display_stock_price(stock_data=stock_data)
 
-    for start, end, difference in zip(extracted_data.start_indicies, extracted_data.end_indicies, extracted_data.difference):
-        if abs(difference) >= min_confidence:
-            ax.axvspan(
-                start, 
-                end, 
-                color=color, 
-                alpha=( (extracted_data.max_difference - abs(difference)) /extracted_data.max_difference )**20/3
-            )
-    ax.axvspan(extracted_data.final_start, extracted_data.final_end, color="red", alpha=0.3)
+    for start, difference in zip(stock_data.comp.start_indicies, stock_data.comp.difference):
+        end = start + stock_data.comp.comp_period * 7.5
+        ax.axvspan(
+            start, 
+            end, 
+            color="green", 
+            alpha=( (stock_data.comp.max_difference - abs(difference)) / stock_data.comp.max_difference )**20/3
+        )
+    ax.axvspan(stock_data.comp.comp_start_index, len(stock_data.close)-1, color="red", alpha=0.3)
 
     if show:
         pyplot.show()
@@ -38,45 +35,47 @@ def highlight_pattern(history_data: history_data, extracted_data: extracted_data
     return fig, ax
 
 
-def display_stock_price(data: history_data, predicted_dates: List[float] = None, predicted_prices: List[float] = None, show: bool = False):
+def display_stock_price(stock_data: stock_data, show: bool = False):
     """
-    Plots stock data.
+    This function plots the historical stock data provided and optionally displays the plot.
     Args:
-        data (history_data): All relevent stock data.
-        show (bool): Display stock data. Defaults to True.
+        stock_data (stock_data): All relevent stock data.
+        show (bool): Display stock data. Defaults to False.
     Returns:
         tuple: A tuple containing the figure and axes objects of the plot.
-    This function plots the historical stock data provided and optionally displays the plot.
     """
-    # Create a figure and axes
     fig, ax = pyplot.subplots()
     
     # Plot the actual stock prices
-    x_values = range(len(data.date))
-    ax.plot(x_values, data.close)
+    x_values = range(len(stock_data.date))
+    ax.plot(x_values, stock_data.close, color='blue', label='Actual Price')
     
     # Plot predicted prices if provided
-    if predicted_dates and predicted_prices:
-        predicted_x = range(len(data.date), len(data.date) + len(predicted_dates))
-        ax.plot(predicted_x, predicted_prices, color='green', label='Predicted Price')
+    if stock_data.comp.processed:
+        predicted_x = range(len(stock_data.date), len(stock_data.date) + len(stock_data.comp.predicted_dates))
+        ax.plot(predicted_x, stock_data.comp.predicted_prices, color='green', label='Predicted Price')
 
-
-    # Adjust the x-tick labels to display dates at specific intervals
-    if (data.period == "1mo"):
-        tick_positions = x_values[::10]
-    elif (data.period == "1y"):
+    # Adjust the x-tick labels as needed
+    if (stock_data.period == 1):
         tick_positions = x_values[::100]
+    elif (stock_data.period == 2):
+        tick_positions = x_values[::200]
     else:
         tick_positions = x_values[::500]
+    tick_positions = list(tick_positions)
 
-    tick_labels = [datetime.fromtimestamp(int(data.date[i])).strftime('%m-%d') for i in tick_positions]
+    # Add last date if not already included
+    last_index = len(x_values) - 1
+    if last_index not in tick_positions:
+        tick_positions.append(last_index)
+        tick_positions.sort()
+
+    tick_labels = [datetime.fromtimestamp(int(stock_data.date[i])).strftime('%m-%d') for i in tick_positions]
     ax.set_xticks(tick_positions)
     ax.set_xticklabels(tick_labels, rotation=45, ha='right')
-    
-    # Set labels and title
     ax.set_xlabel('Data Points')
     ax.set_ylabel('Close Value')
-    ax.set_title(f'{data.ticker} Stock Price Plot ({data.period})')
+    ax.set_title(f'{stock_data.ticker} Stock Price Plot ({stock_data.period})')
     
     # Adjust layout to prevent label cutoff
     fig.tight_layout()
