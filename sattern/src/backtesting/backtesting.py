@@ -12,7 +12,7 @@ def main():
 
     erj_backtesting = backtesting_data(ticker="ERJ")
     erj_backtesting.multi_period_compare()
-    plot_comparison()
+    # plot_comparison(stock_data=erj_backtesting)
 
 
 if __name__ == "__main__":
