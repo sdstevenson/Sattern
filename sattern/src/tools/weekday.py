@@ -36,6 +36,7 @@ class weekday():
         if dt.time() < self.day_start:
             dt = datetime.combine(dt.date(), self.day_start)
         elif dt.time() > self.day_end:
+            dt = dt + timedelta(days=1)
             dt = datetime.combine(dt.date(), self.day_start)
             while not self.is_in_open_day(dt):
                 dt = dt + timedelta(days=1)
