@@ -42,6 +42,10 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10):
     if len(similar_periods) == 0:
         print(f"No periodicity found.")
         return
+    else:
+        data = [diff for _, diff in similar_periods]
+        index = [stock_prices.index[start] for start, _ in similar_periods]
+        highlight_df = pd.DataFrame(data=data, index=index, columns=["sattern_highlight"])
 
     # Use similar periods to predict the next stock price
     hourwise_difference: List[float] = []
@@ -67,5 +71,9 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10):
         else:
             hourwise_price_prediction.append(stock_prices.iloc[-1] + hourwise_difference[0])
 
-    prediction_df = pd.DataFrame(data=hourwise_price_prediction, index=hourwise_dates, columns=["Predicted Prices"])
-    return prediction_df
+    prediction_df = pd.DataFrame(data=hourwise_price_prediction, index=hourwise_dates, columns=["sattern"])
+    highlight_df = highlight_df[~highlight_df.index.duplicated(keep='first')]
+    prediction_df = prediction_df[~prediction_df.index.duplicated(keep='first')]
+    
+    combined_df = pd.concat([highlight_df, prediction_df], axis=1)
+    return combined_df
