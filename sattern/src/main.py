@@ -1,13 +1,19 @@
 import sattern.src.tools.api as api 
-import sattern.src.metrics.sattern as sattern
-from typing import Dict, List
+from sattern.src.metrics.sattern import sattern
 import sattern.src.tools.weekday as weekday
+from sattern.src.tools.display import display
+from typing import Dict, List
 from datetime import datetime
+import pandas as pd
 
 def run_sattern(portfolio: Dict):
-    financial_metrics = api.get_financial_metrics(ticker="ERJ")
-    predicted_prices = sattern.sattern(financial_metrics=financial_metrics)
-    print(predicted_prices)
+    ticker="ERJ"
+    max_diff = 5
+    financial_metrics = api.get_financial_metrics(ticker=ticker)
+    sattern_df = sattern(financial_metrics=financial_metrics, max_diff=max_diff)
+    financial_metrics = pd.concat([financial_metrics, sattern_df], axis=1)
+    print(financial_metrics)
+    display(data=financial_metrics, metrics_to_plot=["prices", "sattern", "sattern_highlight"], ticker=ticker, max_diff=max_diff)
 
     # test_data = stock_data(ticker="ERJ", period=2)
     # # display_stock_data.display_stock_price(stock_data=test_data, show=False)

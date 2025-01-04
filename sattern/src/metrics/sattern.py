@@ -3,7 +3,7 @@ from typing import List, Tuple
 import sattern.src.tools.weekday as weekday
 from datetime import datetime
 
-def sattern(financial_metrics: pd.DataFrame, period: int = 10):
+def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15):
     # Find periods where the data is similar
     datapoints_per_period = period * 8
     stock_prices = financial_metrics["prices"]
@@ -27,7 +27,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10):
         curr_comp_length += 1
         index += 1
 
-        if curr_diff_squared > 15 or abs(curr_comp_diff) > 15:
+        if curr_diff_squared > max_diff or abs(curr_comp_diff) > max_diff:
             curr_comp_start += 1
             index = curr_comp_start
             curr_comp_length = 0

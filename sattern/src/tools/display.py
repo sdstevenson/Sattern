@@ -5,11 +5,11 @@ from sattern.src.tools.api import get_financial_metrics
 from typing import List
 import pandas as pd
 
-def display(data:pd.DataFrame, metrics_to_plot:List[str], ticker:str, period:int=10):
+def display(data:pd.DataFrame, metrics_to_plot:List[str], ticker:str, period:int=10, max_diff:int=15):
     fig, ax = None, None
     for metric in metrics_to_plot:
         if "highlight" in metric:
-            fig, ax = highlight(data[metric], fig, ax, period)
+            fig, ax = highlight(data[metric], period, max_diff, fig, ax)
         else:
             if metric == "prices":
                 color = "blue"
@@ -20,7 +20,7 @@ def display(data:pd.DataFrame, metrics_to_plot:List[str], ticker:str, period:int
     ax.set_title(f"{ticker} Stock")
     pyplot.show()
 
-def highlight(data: pd.DataFrame, fig=None, ax=None, period:int=10):
+def highlight(data: pd.DataFrame, period:int, max_diff:int, fig=None, ax=None):
     if fig is None or ax is None:
         fig, ax = pyplot.subplots()
 
@@ -31,7 +31,15 @@ def highlight(data: pd.DataFrame, fig=None, ax=None, period:int=10):
                 data.index[i],
                 data.index[i + datapoint_per_period],
                 color="green",
-                alpha=( (15 - abs(data.iloc[i])) / 15 )**20/3
+                alpha=( (max_diff - abs(data.iloc[i])) / max_diff )**20/3
+            )
+
+    # Highlight the final period
+    ax.axvspan(
+                data.index[-1 - 2*datapoint_per_period],
+                data.index[-1 - datapoint_per_period],
+                color="red",
+                alpha=0.3
             )
 
     return fig, ax
