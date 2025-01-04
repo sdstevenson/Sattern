@@ -1,10 +1,10 @@
-import sattern.src.api
-import sattern.src.sattern
+import src.tools.api as api 
+import src.metrics.sattern as sattern
 from typing import Dict
 
 def run_sattern(portfolio: Dict):
-    financial_metrics = sattern.src.api.get_financial_metrics(ticker="ERJ")
-    sattern.src.sattern.sattern(financial_metrics=financial_metrics)
+    financial_metrics = api.get_financial_metrics(ticker="ERJ")
+    sattern.sattern(financial_metrics=financial_metrics)
 
 
     # test_data = stock_data(ticker="ERJ", period=2)
