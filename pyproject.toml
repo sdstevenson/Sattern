@@ -17,5 +17,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-sattern = "sattern.main:main"
+sattern = "sattern.src.main:main"
 backtesting = "sattern.src.backtesting.backtesting:main"
