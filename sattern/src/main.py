@@ -1,11 +1,13 @@
-import src.tools.api as api 
-import src.metrics.sattern as sattern
-from typing import Dict
+import sattern.src.tools.api as api 
+import sattern.src.metrics.sattern as sattern
+from typing import Dict, List
+import sattern.src.tools.weekday as weekday
+from datetime import datetime
 
 def run_sattern(portfolio: Dict):
     financial_metrics = api.get_financial_metrics(ticker="ERJ")
-    sattern.sattern(financial_metrics=financial_metrics)
-
+    predicted_prices = sattern.sattern(financial_metrics=financial_metrics)
+    print(predicted_prices)
 
     # test_data = stock_data(ticker="ERJ", period=2)
     # # display_stock_data.display_stock_price(stock_data=test_data, show=False)

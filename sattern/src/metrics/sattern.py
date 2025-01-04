@@ -1,16 +1,16 @@
 import pandas as pd
 from typing import List, Tuple
+import sattern.src.tools.weekday as weekday
+from datetime import datetime
 
 def sattern(financial_metrics: pd.DataFrame, period: int = 10):
     # Find periods where the data is similar
     datapoints_per_period = period * 8
     stock_prices = financial_metrics["prices"]
-    comp_start_index = len(stock_prices) - period - 1
-
-    print(stock_prices.iloc[0])
+    comp_start_index = len(stock_prices) - datapoints_per_period - 1
 
     curr_period_diff = []
-    for i in range(comp_start_index, len(stock_prices)-1):
+    for i in range(comp_start_index-1, len(stock_prices)-1):
         curr_period_diff.append(stock_prices.iloc[i+1] - stock_prices.iloc[i])
 
     curr_comp_start = 0
@@ -58,3 +58,14 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10):
 
     # Calculate price movements and dates
     hourwise_price_prediction: List[float] = []
+    weekday_tool = weekday.weekday()
+    hourwise_dates: List[datetime] = weekday_tool.get_next_n_datetimes(n=datapoints_per_period, start=stock_prices.index[-1])
+
+    for i in range(len(hourwise_difference)):
+        if i != 0:
+            hourwise_price_prediction.append(hourwise_price_prediction[i-1] + hourwise_difference[i])
+        else:
+            hourwise_price_prediction.append(stock_prices.iloc[-1] + hourwise_difference[0])
+
+    prediction_df = pd.DataFrame(data=hourwise_price_prediction, index=hourwise_dates, columns=["Predicted Prices"])
+    return prediction_df
