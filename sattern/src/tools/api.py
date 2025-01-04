@@ -39,8 +39,6 @@ def get_financial_metrics(
         index=prices_df.index
     )
 
-    print(financial_metrics)
-
     financial_metrics.to_json(path_or_buf=file_path, orient='columns', date_format='iso')
 
     return financial_metrics

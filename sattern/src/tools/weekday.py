@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date, time
+from datetime import datetime, timedelta, date, time, timezone
 from typing import List
 
 """Returns a list of datetime objects during specified business hours (UTC)"""
@@ -46,9 +46,9 @@ class weekday():
         next_dates: List[datetime] = []
         for _ in range(n):
             if len(next_dates) == 0:
-                next_dates.append(self.get_next_open_datetime(start))
+                next_dates.append(self.get_next_open_datetime(start).replace(tzinfo=timezone.utc))
             else:
-                next_dates.append(self.get_next_open_datetime(next_dates[-1]))
+                next_dates.append(self.get_next_open_datetime(next_dates[-1]).replace(tzinfo=timezone.utc))
 
         return next_dates
 
