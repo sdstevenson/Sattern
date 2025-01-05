@@ -11,7 +11,7 @@ def get_financial_metrics(
     load_new: bool = False
 ) -> pd.DateOffset:
     """Fetch all metrics and combine to a single DataFrame"""
-    file_path = f'{Path("./sattern/src/data")}/{ticker}_test.json'
+    file_path = f'{Path("./sattern/src/data")}/{ticker}_stock_data.json'
     if not load_new:
         try:
             return pd.read_json(file_path, orient='columns')

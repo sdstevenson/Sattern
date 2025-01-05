@@ -3,7 +3,7 @@ from typing import List, Tuple
 import sattern.src.tools.weekday as weekday
 from datetime import datetime
 
-def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15):
+def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2):
     # Find periods where the data is similar
     datapoints_per_period = period * 8
     stock_prices = financial_metrics["prices"]
@@ -27,7 +27,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15
         curr_comp_length += 1
         index += 1
 
-        if curr_diff_squared > max_diff or abs(curr_comp_diff) > max_diff:
+        if abs(curr_diff_squared) > max_diff or abs(curr_comp_diff) > max_diff:
             curr_comp_start += 1
             index = curr_comp_start
             curr_comp_length = 0
@@ -43,6 +43,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15
         print(f"No periodicity found.")
         return
     else:
+        # print(f"Similar Periods: {similar_periods}")
         data = [diff for _, diff in similar_periods]
         index = [stock_prices.index[start] for start, _ in similar_periods]
         highlight_df = pd.DataFrame(data=data, index=index, columns=["sattern_highlight"])
@@ -54,11 +55,13 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15
         for x in range(len(similar_periods)):
             index = similar_periods[x][0] + i
             # Weight by the difference
-            hourwise_difference[i] += (stock_prices.iloc[index + 1] - stock_prices.iloc[index]) * similar_periods[x][1]
+            hourwise_difference[i] += (stock_prices.iloc[index + 1] - stock_prices.iloc[index]) * (max_diff - similar_periods[x][1])
 
     # Normalize
     total_difference = sum([similar_periods[i][1] for i in range(len(similar_periods))])
     hourwise_difference = [price/total_difference for price in hourwise_difference]
+    # print(f"Hourwise difference: {hourwise_difference}")
+    # print(f"Sum hourwise: {sum(hourwise_difference)}")
 
     # Calculate price movements and dates
     hourwise_price_prediction: List[float] = []
