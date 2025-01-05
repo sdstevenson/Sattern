@@ -5,7 +5,7 @@ from datetime import datetime
 
 def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2) -> Tuple[pd.DataFrame, str]:
     # Find periods where the data is similar
-    datapoints_per_period = period * 8
+    datapoints_per_period = period * 1
     stock_prices = financial_metrics["prices"]
     comp_start_index = len(stock_prices) - datapoints_per_period - 1
 
@@ -40,8 +40,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
             curr_comp_diff = 0
     
     if len(similar_periods) == 0:
-        print(f"No periodicity found.")
-        return
+        return financial_metrics, "Hold"
     else:
         # print(f"Similar Periods: {similar_periods}")
         data = [diff for _, diff in similar_periods]
@@ -94,5 +93,5 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
     highlight_df = highlight_df[~highlight_df.index.duplicated(keep='first')]
     prediction_df = prediction_df[~prediction_df.index.duplicated(keep='first')]
     
-    combined_df = pd.concat([highlight_df, prediction_df], axis=1)
+    combined_df = pd.concat([highlight_df, prediction_df, financial_metrics], axis=1)
     return combined_df, action
