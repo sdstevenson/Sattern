@@ -8,8 +8,9 @@ def get_financial_metrics(
     ticker: str,
     start_date: Optional[Union[str, datetime]] = None, 
     end_date: Optional[Union[str, datetime]] = None,
-    load_new: bool = False
-) -> pd.DateOffset:
+    load_new: bool = False,
+    cache: bool = False
+) -> pd.DataFrame:
     """Fetch all metrics and combine to a single DataFrame"""
     file_path = f'{Path("./sattern/src/data")}/{ticker}_stock_data.json'
     if not load_new:
@@ -39,7 +40,8 @@ def get_financial_metrics(
         index=prices_df.index
     )
 
-    financial_metrics.to_json(path_or_buf=file_path, orient='columns', date_format='iso')
+    if cache:
+        financial_metrics.to_json(path_or_buf=file_path, orient='columns', date_format='iso')
 
     return financial_metrics
 
