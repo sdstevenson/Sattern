@@ -18,4 +18,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 sattern = "sattern.src.main:main"
-backtesting = "sattern.src.backtesting.backtesting:main"
+backtester = "sattern.src.backtester:main"

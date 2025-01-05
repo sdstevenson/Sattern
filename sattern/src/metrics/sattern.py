@@ -3,9 +3,9 @@ from typing import List, Tuple
 import sattern.src.tools.weekday as weekday
 from datetime import datetime
 
-def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15):
+def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2) -> Tuple[pd.DataFrame, str]:
     # Find periods where the data is similar
-    datapoints_per_period = period * 8
+    datapoints_per_period = period * 1
     stock_prices = financial_metrics["prices"]
     comp_start_index = len(stock_prices) - datapoints_per_period - 1
 
@@ -27,7 +27,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15
         curr_comp_length += 1
         index += 1
 
-        if curr_diff_squared > max_diff or abs(curr_comp_diff) > max_diff:
+        if abs(curr_diff_squared) > max_diff or abs(curr_comp_diff) > max_diff:
             curr_comp_start += 1
             index = curr_comp_start
             curr_comp_length = 0
@@ -40,9 +40,9 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15
             curr_comp_diff = 0
     
     if len(similar_periods) == 0:
-        print(f"No periodicity found.")
-        return
+        return financial_metrics, "Hold"
     else:
+        # print(f"Similar Periods: {similar_periods}")
         data = [diff for _, diff in similar_periods]
         index = [stock_prices.index[start] for start, _ in similar_periods]
         highlight_df = pd.DataFrame(data=data, index=index, columns=["sattern_highlight"])
@@ -54,11 +54,13 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15
         for x in range(len(similar_periods)):
             index = similar_periods[x][0] + i
             # Weight by the difference
-            hourwise_difference[i] += (stock_prices.iloc[index + 1] - stock_prices.iloc[index]) * similar_periods[x][1]
+            hourwise_difference[i] += (stock_prices.iloc[index + 1] - stock_prices.iloc[index]) * (max_diff - similar_periods[x][1])
 
     # Normalize
     total_difference = sum([similar_periods[i][1] for i in range(len(similar_periods))])
     hourwise_difference = [price/total_difference for price in hourwise_difference]
+    # print(f"Hourwise difference: {hourwise_difference}")
+    # print(f"Sum hourwise: {sum(hourwise_difference)}")
 
     # Calculate price movements and dates
     hourwise_price_prediction: List[float] = []
@@ -71,9 +73,25 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff:int = 15
         else:
             hourwise_price_prediction.append(stock_prices.iloc[-1] + hourwise_difference[0])
 
+    percent_change = (hourwise_price_prediction[-1] - stock_prices.iloc[-1]) / stock_prices.iloc[-1]
+    action = ""
+
+    if abs(percent_change) < 0.02:
+        action = "Hold"
+    elif percent_change > 0.02:
+        if percent_change > 0.10:
+            action = "Strong Buy"
+        else:
+            action = "Buy"
+    elif percent_change < 0.02:
+        if percent_change < 0.10:
+            action = "Strong Sell"
+        else:
+            action = "Sell"
+
     prediction_df = pd.DataFrame(data=hourwise_price_prediction, index=hourwise_dates, columns=["sattern"])
     highlight_df = highlight_df[~highlight_df.index.duplicated(keep='first')]
     prediction_df = prediction_df[~prediction_df.index.duplicated(keep='first')]
     
-    combined_df = pd.concat([highlight_df, prediction_df], axis=1)
-    return combined_df
+    combined_df = pd.concat([highlight_df, prediction_df, financial_metrics], axis=1)
+    return combined_df, action
