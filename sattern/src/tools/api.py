@@ -52,6 +52,6 @@ def get_prices(
 ) -> pd.DataFrame:
     api_obj = yf.Ticker(ticker=ticker)
 
-    history = api_obj.history(start=start_date, end=end_date, interval="1h")
+    history = api_obj.history(start=start_date, end=end_date, interval="1d")
 
     return history
