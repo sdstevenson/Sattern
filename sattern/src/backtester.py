@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Union
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -18,8 +18,10 @@ class Backtester:
             end_date = datetime.strptime(end_date, '%Y-%m-%d')
         if start_date > end_date:
             start_date, end_date = end_date, start_date
-        self.start_date = start_date
-        self.end_date = end_date
+        if end_date > datetime.now():
+            end_date = datetime.now()
+        self.start_date = start_date.replace(tzinfo=timezone.utc)
+        self.end_date = end_date.replace(tzinfo=timezone.utc)
 
         self.init_capital = init_capital
         self.portfolio = {"cash": init_capital, "stock": 0}
@@ -30,10 +32,9 @@ class Backtester:
         if "Buy" in action:
             if action == "Strong Buy":
                 quantity = STRONG_SIGNAL_QUANTITY
-                cost = STRONG_SIGNAL_QUANTITY * current_price
             elif action == "Buy":
                 quantity = NORMAL_SIGNAL_QUANTITY
-                cost = NORMAL_SIGNAL_QUANTITY * current_price
+            cost = quantity * current_price
             if cost <= self.portfolio["cash"]:
                 self.portfolio["stock"] += quantity
                 self.portfolio["cash"] -= cost
@@ -48,10 +49,9 @@ class Backtester:
         elif "Sell" in action:
             if action == "Strong Sell":
                 quantity = STRONG_SIGNAL_QUANTITY
-                cost = STRONG_SIGNAL_QUANTITY * current_price
             elif action == "Sell":
                 quantity = NORMAL_SIGNAL_QUANTITY
-                cost = NORMAL_SIGNAL_QUANTITY * current_price
+            cost = quantity * current_price
 
             quantity = min(quantity, self.portfolio["stock"])
             if quantity > 0:
@@ -72,24 +72,31 @@ class Backtester:
             df = get_financial_metrics(ticker=self.ticker, start_date=curr_start_date, end_date=curr_date, load_new=True, cache=False)
             df, action = sattern(df)
 
-            curr_price = df["prices"].iloc[-1]
-            self.execute_trade(action, curr_price)
+            index = -1
+            while True:
+                curr_price = df.iloc[index]['prices']
+                if not pd.isna(curr_price):
+                    break
+                index -= 1
+            
+            executed_quantity = self.execute_trade(action, curr_price)
 
-            total_value = self.portfolio["cash"] + self.portfolio["stock"]*curr_price
+            total_value = self.portfolio["cash"] + self.portfolio["stock"] * curr_price
             self.portfolio_values.append(
-                {"Date": curr_date.strftime('%Y-%m-%d'), "Value": total_value}
+                {"Date": curr_date.strftime('%Y-%m-%d'), "Portfolio Value": total_value}
             )
-
             self.portfolio_value = total_value
 
-            print(f"Start: {curr_start_date.strftime('%Y-%m-%d')} -> End: {curr_date.strftime('%Y-%m-%d')}")
-            print(f"\tAction: {action}, Value: {total_value}")
+            print(
+                f"{curr_date.strftime('%Y-%m-%d'):<12} {self.ticker:<6} {action:<6} {executed_quantity:>8} {curr_price:>8.2f} "
+                f"{self.portfolio['cash']:>12.2f} {self.portfolio['stock']:>8} {total_value:>12.2f}"
+            )
 
     def analyze_performance(self):
         performance_df = pd.DataFrame(self.portfolio_values).set_index("Date")
 
         # Calculate total return
-        total_return = (self.portfolio["portfolio_value"] - self.init_capital) / self.init_capital
+        total_return = (self.portfolio_value - self.init_capital) / self.init_capital
         print(f"Total Return: {total_return * 100:.2f}%")
 
         # Plot the portfolio value over time
