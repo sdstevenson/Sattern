@@ -3,7 +3,7 @@ from typing import List, Tuple
 import sattern.src.tools.weekday as weekday
 from datetime import datetime
 
-def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2):
+def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2) -> Tuple[pd.DataFrame, str]:
     # Find periods where the data is similar
     datapoints_per_period = period * 8
     stock_prices = financial_metrics["prices"]
@@ -74,9 +74,25 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
         else:
             hourwise_price_prediction.append(stock_prices.iloc[-1] + hourwise_difference[0])
 
+    percent_change = (hourwise_price_prediction[-1] - stock_prices.iloc[-1]) / stock_prices.iloc[-1]
+    action = ""
+
+    if abs(percent_change) < 0.02:
+        action = "Hold"
+    elif percent_change > 0.02:
+        if percent_change > 0.10:
+            action = "Strong Buy"
+        else:
+            action = "Buy"
+    elif percent_change < 0.02:
+        if percent_change < 0.10:
+            action = "Strong Sell"
+        else:
+            action = "Sell"
+
     prediction_df = pd.DataFrame(data=hourwise_price_prediction, index=hourwise_dates, columns=["sattern"])
     highlight_df = highlight_df[~highlight_df.index.duplicated(keep='first')]
     prediction_df = prediction_df[~prediction_df.index.duplicated(keep='first')]
     
     combined_df = pd.concat([highlight_df, prediction_df], axis=1)
-    return combined_df
+    return combined_df, action
