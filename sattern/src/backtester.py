@@ -23,6 +23,7 @@ class Backtester:
 
         self.init_capital = init_capital
         self.portfolio = {"cash": init_capital, "stock": 0}
+        self.portfolio_value = 0
         self.portfolio_values = []
 
     def execute_trade(self, action: str, current_price: float) -> int:
@@ -67,17 +68,22 @@ class Backtester:
         print("-" * 100)
 
         for curr_date in dates:
-            curr_start_date = (curr_date - timedelta(days=730)).strftime('%Y-%m-%d')
+            curr_start_date = (curr_date - timedelta(days=730))
             df = get_financial_metrics(ticker=self.ticker, start_date=curr_start_date, end_date=curr_date, load_new=True, cache=False)
             df, action = sattern(df)
 
-            curr_price = df.iloc[-1]["close"]
-            executed_quantity = self.execute_trade(action, curr_price)
+            curr_price = df["prices"].iloc[-1]
+            self.execute_trade(action, curr_price)
 
             total_value = self.portfolio["cash"] + self.portfolio["stock"]*curr_price
             self.portfolio_values.append(
                 {"Date": curr_date.strftime('%Y-%m-%d'), "Value": total_value}
             )
+
+            self.portfolio_value = total_value
+
+            print(f"Start: {curr_start_date.strftime('%Y-%m-%d')} -> End: {curr_date.strftime('%Y-%m-%d')}")
+            print(f"\tAction: {action}, Value: {total_value}")
 
     def analyze_performance(self):
         performance_df = pd.DataFrame(self.portfolio_values).set_index("Date")
@@ -110,3 +116,13 @@ class Backtester:
         print(f"Maximum Drawdown: {max_drawdown * 100:.2f}%")
 
         return performance_df
+
+def main():
+    start = datetime.now() - timedelta(days=730)
+    end = datetime.now()
+    backtester = Backtester("ERJ", start, end, 10000)
+    backtester.run_backtesting()
+    backtester.analyze_performance()
+
+if __name__ == "__main__":
+    main()
