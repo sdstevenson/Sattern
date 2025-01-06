@@ -67,14 +67,17 @@ class Backtester:
         print(f"{'Date':<12} {'Ticker':<6} {'Action':<6} {'Quantity':>8} {'Price':>8} {'Cash':>12} {'Stock':>8} {'Total Value':>12}")
         print("-" * 100)
 
+        df = get_financial_metrics(ticker=self.ticker, start_date=self.start_date-timedelta(days=730), end_date=self.end_date, load_new=True, cache=False)
+
         for curr_date in dates:
             curr_start_date = (curr_date - timedelta(days=730))
-            df = get_financial_metrics(ticker=self.ticker, start_date=curr_start_date, end_date=curr_date, load_new=True, cache=False)
-            df, action = sattern(df)
+            # df = get_financial_metrics(ticker=self.ticker, start_date=curr_start_date, end_date=curr_date, load_new=True, cache=False)
+            sattern_df = df.loc[curr_start_date:curr_date].copy()
+            sattern_df, action = sattern(sattern_df)
 
             index = -1
             while True:
-                curr_price = df.iloc[index]['prices']
+                curr_price = sattern_df.iloc[index]['prices']
                 if not pd.isna(curr_price):
                     break
                 index -= 1
