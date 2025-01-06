@@ -102,14 +102,6 @@ class Backtester:
         total_return = (self.portfolio_value - self.init_capital) / self.init_capital
         print(f"Total Return: {total_return * 100:.2f}%")
 
-        # Plot the portfolio value over time
-        performance_df["Portfolio Value"].plot(
-            title="Portfolio Value Over Time", figsize=(12, 6)
-        )
-        plt.ylabel("Portfolio Value ($)")
-        plt.xlabel("Date")
-        plt.show()
-
         # Compute daily returns
         performance_df["Daily Return"] = performance_df["Portfolio Value"].pct_change()
 
@@ -124,6 +116,14 @@ class Backtester:
         drawdown = performance_df["Portfolio Value"] / rolling_max - 1
         max_drawdown = drawdown.min()
         print(f"Maximum Drawdown: {max_drawdown * 100:.2f}%")
+
+        # Plot the portfolio value over time
+        performance_df["Portfolio Value"].plot(
+            title="Portfolio Value Over Time", figsize=(12, 6)
+        )
+        plt.ylabel("Portfolio Value ($)")
+        plt.xlabel("Date")
+        plt.show()
 
         return performance_df
 
