@@ -42,7 +42,6 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
     if len(similar_periods) == 0:
         return financial_metrics, "Hold"
     else:
-        # print(f"Similar Periods: {similar_periods}")
         diff_data = [diff for _, diff in similar_periods]
         index = [stock_prices.index[start] for start, _ in similar_periods]
         highlight_df = pd.DataFrame(data=diff_data, index=index, columns=["sattern_highlight"])
@@ -59,8 +58,6 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
     # Normalize
     total_difference = sum([similar_periods[i][1] for i in range(len(similar_periods))])
     sim_period_difference = [price/total_difference for price in sim_period_difference]
-    # print(f"Hourwise difference: {sim_period_difference}")
-    # print(f"Sum hourwise: {sum(sim_period_difference)}")
 
     # Calculate price movements and dates
     sim_period_price_prediction: List[float] = []
@@ -69,10 +66,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
 
     sim_period_price_prediction.append(stock_prices.iloc[-1])
     for i in range(len(sim_period_difference)):
-        # if i != 0:
         sim_period_price_prediction.append(sim_period_price_prediction[i] + sim_period_difference[i])
-        # else:
-        #     sim_period_price_prediction.append(stock_prices.iloc[-1] + sim_period_difference[0])
 
     percent_change = (sim_period_price_prediction[-1] - stock_prices.iloc[-1]) / stock_prices.iloc[-1]
     action = ""

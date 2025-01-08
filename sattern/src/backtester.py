@@ -71,7 +71,6 @@ class Backtester:
 
         for curr_date in dates:
             curr_start_date = (curr_date - timedelta(days=730))
-            # df = get_financial_metrics(ticker=self.ticker, start_date=curr_start_date, end_date=curr_date, load_new=True, cache=False)
             sattern_df = df.loc[curr_start_date:curr_date].copy()
             sattern_df, action = sattern(sattern_df)
 
