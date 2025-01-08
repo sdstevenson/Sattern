@@ -1,3 +1,7 @@
+# Custom Ignores
+sattern/src/data/
+sattern/.env
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -26,8 +30,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Ignore data folder
-sattern/src/data/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
