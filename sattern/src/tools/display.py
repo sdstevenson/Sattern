@@ -1,7 +1,5 @@
 from matplotlib import pyplot
 import matplotlib.dates as mdates
-from datetime import datetime
-from sattern.src.tools.api import get_financial_metrics
 from typing import List
 import pandas as pd
 
@@ -24,20 +22,19 @@ def highlight(data: pd.DataFrame, period:int, max_diff:int, fig=None, ax=None):
     if fig is None or ax is None:
         fig, ax = pyplot.subplots()
 
-    datapoint_per_period = period * 10
     for i in range(len(data)):
         if not pd.isna(data.iloc[i]):
             ax.axvspan(
                 data.index[i],
-                data.index[i + datapoint_per_period],
+                data.index[i + period],
                 color="green",
                 alpha=( (max_diff - abs(data.iloc[i])) / max_diff )**20/3
             )
 
     # Highlight the final period
     ax.axvspan(
-                data.index[-1 - 2*datapoint_per_period],
-                data.index[-1 - datapoint_per_period],
+                data.index[-1 - 2*period],
+                data.index[-1 - period],
                 color="red",
                 alpha=0.3
             )
