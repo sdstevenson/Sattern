@@ -5,14 +5,16 @@ import matplotlib.pyplot as plt
 from sattern.src.metrics.sattern import sattern
 from sattern.src.tools.api import get_financial_metrics
 from pathlib import Path
+import json
 
 STRONG_SIGNAL_QUANTITY = 10
 NORMAL_SIGNAL_QUANTITY = 5
 
 class Backtester:
-    def __init__(self, ticker: str, start_date: Union[datetime, str], end_date: Union[datetime, str], init_capital: float, display: bool):
+    def __init__(self, ticker: str, start_date: Union[datetime, str], end_date: Union[datetime, str], init_capital: float, display: bool, period):
         self.ticker = ticker
         self.display = display
+        self.period = period
 
         if type(start_date) == str:
             start_date = datetime.strptime(start_date, '%Y-%m-%d')
@@ -80,7 +82,7 @@ class Backtester:
         for curr_date in dates:
             curr_start_date = (curr_date - timedelta(days=730))
             sattern_df = df.loc[curr_start_date:curr_date].copy()
-            sattern_df, action = sattern(sattern_df, 2)
+            sattern_df, action = sattern(sattern_df, self.period)
 
             index = -1
             while True:
@@ -146,21 +148,25 @@ class Backtester:
 def main():
     start = datetime.now() - timedelta(days=730)
     end = datetime.now()
-    performance_df = pd.DataFrame()
-    stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
-    save_name = "top_10_tech"
+    all_data = {}
+    # stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
+    stocks = ["NG=F", "BZ=F", "KC=F"]
+    save_name = "commodities"
     avg_returns = 0
     for ticker in stocks:
-        backtester = Backtester(ticker, start, end, 10000, False)
+        backtester = Backtester(ticker, start, end, 10000, False, 5)
         backtester.run_backtesting()
         df, total_return = backtester.analyze_performance()
-        # performance_df[ticker] = df
         avg_returns += total_return
 
-    avg_returns = total_return/len(stocks)
-    print(f"Average returns: {avg_returns:.2f}%")
-    # file_path = f'{Path("./sattern/src/backtesting_results")}/{save_name}.json'
-    # performance_df.to_json(path_or_buf=file_path, orient='columns', date_format='iso')
+        all_data[ticker] = df.dropna().to_dict()
+
+    avg_returns = avg_returns / len(stocks)
+    print(f"\nAverage returns: {avg_returns:.2f}%")
+
+    with open(f'{Path("./sattern/src/backtesting_results")}/{save_name}.json', 'w') as f:
+        json.dump(all_data, f)
+    # combined_df.to_json(path_or_buf=file_path, orient='columns', date_format='iso')
 
 
 if __name__ == "__main__":
