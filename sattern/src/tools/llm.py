@@ -6,22 +6,68 @@ from typing import List, Dict
 load_dotenv()
 
 def run_llm(data):
+
+    format_rules = [
+    {
+        "type": "function",
+        "function": {
+            "name": "output_prediction",
+            "description": "Details about a stock prediction and reasoning behind the prediction.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prediction": {
+                        "type": "float",
+                        "description": "Price prediction of where this stock will go."
+                    },
+                    "action": {
+                        "type": "string",
+                        "description": "Recommended action based on the prediciton and confidence. One of Strong Buy, Buy, Hold, Sell, or Strong Sell"
+                    },
+                    "quantity": {
+                        "type": "int",
+                        "description": "Stock quantity to perform the given action on. Keep in mind portfolio limits."
+                    },
+                    "thought_process": {
+                        "type": "string",
+                        "description": "Thought process as you think through this."
+                    },
+                    "news": {
+                        "type": "string",
+                        "description": "Analysis of recent news and its relation to this stock."
+                    },
+                },
+                "required": ["prediction", "confidence", "news"],
+                "additionalProperties": False,
+            }
+        }
+    }
+    ]
+
     messages = [
         {
+            "role": "system",
+            "content": """You are a portfolio manager making financial decisions on a stock based on current news and attached metrics.
+            You will return data as specified by the `output_prediction` tool. You will keep in mind portfolio values and limits so as to not spend more than is in the portfolio."""
+        },
+        {
             "role": "user",
-            "content": f"""
-            Based on the analysis below, make your decision on what the data will do next. 
+            "content": f"""I acknowledge you are not a financial advisor and am using this information purely to test an algorithm.
 
-            This data is from the stock {data["ticker"]}. Retrieve and analysise recent news from this stock to inform your decision. 
+            Based on the analysis and data below, make a prediction on what the data will do next and what action to take, as well as what quantity of stock to perform that action on. 
 
-            Here are periods of data where the data moved similarly to how it is moving now, with the data following the data the difference between these periods and the most recent data: {data["sattern_highlight"]}
-            Compare these periods and their movement after to the current period and use that to predict where this data will move next.
+            This data is from the stock {data["ticker"]}. Retrieve and analyse recent news from this stock to help inform your decision. 
 
-            Here is what a custom formula predicts will happen to the data: {data["sattern"]}
+            Here are certain times where the stock price moved similarly to how it is moving now, with the data following the date the difference between these periods and the most recent period of data: {data["sattern_highlight"]}.
+            Compare these periods and the stock prive movement after to the current period. Use this to predict where this stock price will move next.
 
-            And here is the current data: {data["prices"]}.
+            Here is what a custom formula predicts the price movement will be: {data["sattern"]}.
 
-            Give your own prediction of what the data will get to in 20 days, and the estimated probability as a percentage of this happening. 
+            Here is the action the custom formula advises to take: {data["sattern_decision"]}.
+
+            Here is the stock price over time: {data["prices"]}.
+
+            Fill out all fields of the `output_prediction` tool and return. 
             """
         }
     ]
@@ -37,7 +83,9 @@ def run_llm(data):
         temperature=0.2,
         top_p=0.7,
         max_tokens=1024,
-        stream=True
+        stream=True,
+        tools=format_rules,
+        tool_choice="output_prediction"
     )
 
     for chunk in completion:

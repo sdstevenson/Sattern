@@ -24,7 +24,7 @@ def run_trader(ticker: str = "ERJ"):
         "prices": financial_metrics["prices"].dropna(),
         "sattern_highlight": financial_metrics["sattern_highlight"].dropna(),
         "sattern": financial_metrics["sattern"].dropna(),
-        "sattern_action": decision
+        "sattern_decision": decision
     }
 
     run_llm(data)
