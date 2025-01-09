@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 from typing import Dict
 from sattern.src.tools.trader import portfolio
+from openai import OpenAIError
 
 load_dotenv()
 
@@ -86,30 +87,42 @@ def run_llm(ticker: str, df: pd.DataFrame, actions: Dict[str, str], portfolio: p
         }
     ]
 
-    client = OpenAI(
-        base_url = "https://integrate.api.nvidia.com/v1",
-        api_key = os.getenv('NIM_API_KEY')
-    )
+    try:
+        client = OpenAI(
+            base_url = "https://integrate.api.nvidia.com/v1",
+            api_key = os.getenv('NIM_API_KEY')
+        )
 
-    completion = client.chat.completions.create(
-        model="meta/llama-3.3-70b-instruct",
-        messages=messages,
-        temperature=0.2,
-        top_p=0.7,
-        max_tokens=1024,
-        stream=False,
-        # response_format=format_rules
-        tools=format_rules,
-        tool_choice="auto"
-    )
+        completion = client.chat.completions.create(
+            model="meta/llama-3.3-70b-instruct",
+            messages=messages,
+            temperature=0.2,
+            top_p=0.7,
+            max_tokens=1024,
+            stream=False,
+            # response_format=format_rules
+            tools=format_rules,
+            tool_choice="auto"
+        )
 
-    response = completion.choices[0].message.tool_calls[0].function.arguments
-    parsed_response = json.loads(response)
+        response = completion.choices[0].message.tool_calls[0].function.arguments
+        parsed_response = json.loads(response)
 
-    # with open(f'{Path("./sattern/src/data")}/AI_RESPONSE.json', 'w') as f:
-    #     json.dump(parsed_response, f, indent=4)
+        # with open(f'{Path("./sattern/src/data")}/AI_RESPONSE.json', 'w') as f:
+        #     json.dump(parsed_response, f, indent=4)
 
-    return parsed_response
+        return parsed_response
+    except OpenAIError as e:
+        print(f"Error with LLM: {e}")
+        response = {
+            "prediction": 0,
+            "action": "Hold",
+            "quantity": 0,
+            "thought_process": "",
+            "news": ""
+        }
+
+        return response
 
 if __name__ == "__main__":
     messages = [{"role":"user","content":"Write a limerick about the wonders of GPU computing."}]
