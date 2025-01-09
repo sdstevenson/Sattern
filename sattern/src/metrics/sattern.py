@@ -87,6 +87,6 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
     prediction_df = pd.DataFrame(data=sim_period_price_prediction, index=sim_period_dates, columns=["sattern"])
     highlight_df = highlight_df[~highlight_df.index.duplicated(keep='first')]
     prediction_df = prediction_df[~prediction_df.index.duplicated(keep='first')]
-    
-    combined_df = pd.concat([highlight_df, prediction_df, financial_metrics], axis=1)
-    return combined_df, action
+    combined_df = pd.concat([highlight_df, prediction_df], axis=1)
+
+    return (combined_df, action)
