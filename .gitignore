@@ -1,5 +1,6 @@
 # Custom Ignores
 sattern/src/data/
+sattern/src/backtesting_results
 sattern/.env
 
 # Byte-compiled / optimized / DLL files
