@@ -39,6 +39,7 @@ def get_financial_metrics(
         },
         index=prices_df.index
     )
+    financial_metrics.sort_index(inplace=True)
 
     if cache:
         financial_metrics.to_json(path_or_buf=file_path, orient='columns', date_format='iso')

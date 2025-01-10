@@ -1,5 +1,4 @@
 import sattern.src.tools.api as api 
-from sattern.src.metrics.sattern import sattern
 from sattern.src.metrics.combine import combine
 from sattern.src.tools.display import display
 from sattern.src.tools.llm import run_llm
@@ -8,15 +7,16 @@ from typing import Dict
 import pandas as pd
 
 def run_sattern(ticker: str = "ERJ"):
+    ticker = "BZ=F"
     period = 10
     max_diff = 5
-    financial_metrics = api.get_financial_metrics(ticker=ticker)
-    financial_metrics, decision = sattern(financial_metrics=financial_metrics, period=period, max_diff=max_diff)
+    financial_metrics = api.get_financial_metrics(ticker=ticker, load_new=True, cache=True)
+    financial_metrics, decision = combine(df=financial_metrics, period=period, max_diff=max_diff, cache=True, ticker=ticker)
     # print(f"{financial_metrics}\n***{decision}***")
     display(data=financial_metrics, metrics_to_plot=["prices", "sattern", "sattern_highlight"], ticker=ticker, max_diff=max_diff)
     return financial_metrics, decision
 
-def run_all(ticker: str, portfolio: portfolio):
+def run_fund_manager(ticker: str, portfolio: portfolio):
     # Get Data
     financial_metrics = api.get_financial_metrics(ticker)
     # Get Metrics
@@ -35,10 +35,8 @@ def run_all(ticker: str, portfolio: portfolio):
     print(portfolio)
 
 def main():
-    # run_trader()
-    # run_sattern(ticker="ERJ")
     curr_portfolio = portfolio(10000, 0)
-    run_all("ERJ", curr_portfolio)
+    run_fund_manager("ERJ", curr_portfolio)
 
 if __name__ == "__main__":
     main()
