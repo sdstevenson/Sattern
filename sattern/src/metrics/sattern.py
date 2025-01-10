@@ -40,7 +40,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
             curr_comp_diff = 0
     
     if len(similar_periods) == 0:
-        return financial_metrics, "Hold"
+        return pd.DataFrame(columns=["sattern", "sattern_highlight"]), "Hold"
     else:
         diff_data = [diff for _, diff in similar_periods]
         index = [stock_prices.index[start] for start, _ in similar_periods]
@@ -87,6 +87,6 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
     prediction_df = pd.DataFrame(data=sim_period_price_prediction, index=sim_period_dates, columns=["sattern"])
     highlight_df = highlight_df[~highlight_df.index.duplicated(keep='first')]
     prediction_df = prediction_df[~prediction_df.index.duplicated(keep='first')]
-    
-    combined_df = pd.concat([highlight_df, prediction_df, financial_metrics], axis=1)
-    return combined_df, action
+    combined_df = pd.concat([highlight_df, prediction_df], axis=1)
+
+    return (combined_df, action)

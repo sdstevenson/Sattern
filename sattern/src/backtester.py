@@ -2,13 +2,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Union, Tuple
 import pandas as pd
 import matplotlib.pyplot as plt
-from sattern.src.metrics.sattern import sattern
+from sattern.src.metrics.combine import combine
 from sattern.src.tools.api import get_financial_metrics
+from sattern.src.tools.trader import portfolio
 from pathlib import Path
 import json
 
-STRONG_SIGNAL_QUANTITY = 10
-NORMAL_SIGNAL_QUANTITY = 5
 
 class Backtester:
     def __init__(self, ticker: str, start_date: Union[datetime, str], end_date: Union[datetime, str], init_capital: float, display: bool, period):
@@ -28,43 +27,11 @@ class Backtester:
         self.end_date = end_date.replace(tzinfo=timezone.utc)
 
         self.init_capital = init_capital
-        self.portfolio = {"cash": init_capital, "stock": 0}
+        self.portfolio: portfolio = portfolio(init_capital)
         self.portfolio_value = 0
         self.portfolio_values = []
 
         self.df = ""
-
-    def execute_trade(self, action: str, current_price: float) -> int:
-        if "Buy" in action:
-            if action == "Strong Buy":
-                quantity = STRONG_SIGNAL_QUANTITY
-            elif action == "Buy":
-                quantity = NORMAL_SIGNAL_QUANTITY
-            cost = quantity * current_price
-            if cost <= self.portfolio["cash"]:
-                self.portfolio["stock"] += quantity
-                self.portfolio["cash"] -= cost
-                return quantity
-            else:
-                max_quantity = self.portfolio["cash"] // current_price
-                if max_quantity > 0:
-                    self.portfolio["stock"] += max_quantity
-                    self.portfolio["cash"] -= max_quantity * current_price
-                    return max_quantity
-                return 0
-        elif "Sell" in action:
-            if action == "Strong Sell":
-                quantity = STRONG_SIGNAL_QUANTITY
-            elif action == "Sell":
-                quantity = NORMAL_SIGNAL_QUANTITY
-            cost = quantity * current_price
-
-            quantity = min(quantity, self.portfolio["stock"])
-            if quantity > 0:
-                self.portfolio["stock"] -= quantity
-                self.portfolio["cash"] += quantity * current_price
-            return quantity
-        return 0
 
     def run_backtesting(self):
         dates = pd.date_range(self.start_date, self.end_date, freq="B")
@@ -81,19 +48,20 @@ class Backtester:
 
         for curr_date in dates:
             curr_start_date = (curr_date - timedelta(days=730))
-            sattern_df = df.loc[curr_start_date:curr_date].copy()
-            sattern_df, action = sattern(sattern_df, self.period)
+            test_df = df.loc[curr_start_date:curr_date].copy()
+            metrics_df, action = combine(test_df, self.period)
 
             index = -1
             while True:
-                curr_price = sattern_df.iloc[index]['prices']
+                curr_price = test_df.iloc[index]['prices']
                 if not pd.isna(curr_price):
                     break
                 index -= 1
             
-            executed_quantity = self.execute_trade(action, curr_price)
+            # TO DO change action for multiple metrics
+            executed_quantity = self.portfolio.execute_trade(action=action["sattern"], current_price=curr_price)
 
-            total_value = self.portfolio["cash"] + self.portfolio["stock"] * curr_price
+            total_value = self.portfolio.cash + self.portfolio.stock * curr_price
             self.portfolio_values.append(
                 {"Date": curr_date.strftime('%Y-%m-%d'), "Portfolio Value": total_value}
             )
@@ -102,7 +70,7 @@ class Backtester:
             if self.display:
                 print(
                     f"{curr_date.strftime('%Y-%m-%d'):<12} {self.ticker:<6} {action:<6} {executed_quantity:>8} {curr_price:>8.2f} "
-                    f"{self.portfolio['cash']:>12.2f} {self.portfolio['stock']:>8} {total_value:>12.2f}"
+                    f"{self.portfolio.cash:>12.2f} {self.portfolio.stock:>8} {total_value:>12.2f}"
                 )
 
     def analyze_performance(self) -> Tuple[pd.DataFrame, float]:
@@ -166,8 +134,6 @@ def main():
 
     with open(f'{Path("./sattern/src/backtesting_results")}/{save_name}.json', 'w') as f:
         json.dump(all_data, f)
-    # combined_df.to_json(path_or_buf=file_path, orient='columns', date_format='iso')
-
 
 if __name__ == "__main__":
     main()
