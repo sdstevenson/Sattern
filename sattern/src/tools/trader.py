@@ -33,6 +33,7 @@ class portfolio():
             quantity = quantity * -1
 
         self.stock += quantity
+        self.cash -= abs(quantity) * current_price
 
         if show:
             print(f"{action} {quantity} @ {current_price}")
