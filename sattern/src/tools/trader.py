@@ -10,26 +10,32 @@ class portfolio():
         self.stock = stock
         self.display = display
 
-    def execute_trade(self, action: str, quantity: int, current_price):
+    def execute_trade(self, action: str, current_price: float, quantity: int = None, show: bool = False):
+        if quantity is None:
+            if action == "Strong Buy":
+                quantity = STRONG_SIGNAL_QUANTITY
+            elif action == "Buy":
+                quantity = NORMAL_SIGNAL_QUANTITY
+            elif action == "Strong Sell":
+                quantity = STRONG_SIGNAL_QUANTITY
+            elif action == "Sell":
+                quantity = NORMAL_SIGNAL_QUANTITY
+            else:
+                quantity = 0
+
+
         cost = abs(quantity) * current_price
 
-        if "Buy" in action:
-            if cost <= self.cash:
-                self.stock += quantity
-                self.cash -= cost
-            else:
-                max_quantity = self.cash // current_price
-                if max_quantity > 0:
-                    self.stock += max_quantity
-                    self.cash -= max_quantity * current_price
-                    quantity = max_quantity
+        if "Buy" in action and cost > self.cash:
+            quantity = self.cash // current_price
         elif "Sell" in action:
-            quantity = min(quantity, self.stock)
-            if quantity > 0:
-                self.stock -= quantity
-                self.cash += quantity * current_price
-        
-        print(f"{action} {quantity} @ {current_price}")
+            quantity = abs(min(abs(quantity), self.stock))
+            quantity = quantity * -1
+
+        self.stock += quantity
+
+        if show:
+            print(f"{action} {quantity} @ {current_price}")
 
     def __str__(self) -> str:
         return f"Portfolio(cash={self.cash}, stock={self.stock})"

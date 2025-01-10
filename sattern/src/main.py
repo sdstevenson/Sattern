@@ -31,7 +31,7 @@ def run_all(ticker: str, portfolio: portfolio):
         if not pd.isna(curr_price):
             break
         index -= 1
-    portfolio.execute_trade(llm_response["action"], llm_response["quantity"], curr_price)
+    portfolio.execute_trade(llm_response["action"], curr_price, llm_response["quantity"])
     print(portfolio)
 
 def main():
