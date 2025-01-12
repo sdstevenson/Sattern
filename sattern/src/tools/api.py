@@ -10,12 +10,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_financial_metrics(
-    ticker: str,
-    start_date: Optional[Union[str, datetime]] = None, 
-    end_date: Optional[Union[str, datetime]] = None,
-    load_new: bool = False,
-    cache: bool = False
-) -> pd.DataFrame:
+        ticker: str,
+        start_date: Optional[Union[str, datetime]] = None, 
+        end_date: Optional[Union[str, datetime]] = None,
+        load_new: bool = False,
+        cache: bool = False
+    ) -> pd.DataFrame:
     file_path = f'{Path("./sattern/src/data")}/{ticker}_stock_data.json'
     if not load_new:
         try:
@@ -26,7 +26,7 @@ def get_financial_metrics(
 
     if start_date is None or end_date is None:
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=730)
+        start_date = end_date - timedelta(days=7300)
     if isinstance(start_date, str):
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
     if isinstance(end_date, str):
@@ -35,21 +35,20 @@ def get_financial_metrics(
         start_date, end_date = end_date, start_date
 
     # Collect metrics
-    news = get_news(ticker, start_date, end_date)
-    return
+    prices_df = get_prices(ticker)
+    insider_transactions = get_insider_transactions(ticker)
 
-    prices_df = get_prices(ticker, start_date, end_date)
-    print(prices_df)
-
-    # Combine metrics
-    financial_metrics = prices_df
+    # Combine metrics -- TO DO for more metrics
+    financial_metrics = pd.concat([prices_df, insider_transactions], axis=1)
+    financial_metrics = financial_metrics[(financial_metrics.index >= start_date) & (financial_metrics.index <= end_date)]
 
     if cache:
         financial_metrics.to_json(path_or_buf=file_path, orient='columns', date_format='iso')
 
     return financial_metrics
 
-def get_prices(ticker: str, start_date: datetime, end_date: datetime) -> pd.DataFrame:
+def get_prices(ticker: str) -> pd.DataFrame:
+    # Note: Start and end dates not required. Gets past 20 years, select needed data.
     args = {
         "function": "TIME_SERIES_DAILY",
         "symbol": ticker,
@@ -72,11 +71,7 @@ def get_prices(ticker: str, start_date: datetime, end_date: datetime) -> pd.Data
 
     return df
 
-# def get_recommendations(ticker: str) -> pd.DataFrame:
-#     yf = yfinance.Ticker(ticker)
-#     return yf.get_recommendations()
-
-def get_news(ticker: str, start_date: datetime, end_date: datetime):
+def get_news(ticker: str, start_date: datetime, end_date: datetime) -> Dict:
     args = {
         "function": "NEWS_SENTIMENT",
         "tickers": ticker,
@@ -91,21 +86,8 @@ def get_news(ticker: str, start_date: datetime, end_date: datetime):
     #     json.dump(news, f)
     return news
 
-    # Get the average sentiment, weighted by the relevance score
-    total_relevance = 0
-    total_sentiment = 0
-    count = 0
-    for article in news["feed"]:
-        for rating in news[article]["ticker_sentiment"]:
-            if rating["ticker"] == ticker:
-                relevance = float(rating["ticker"]["relevance_score"])
-                sentiment = float(rating["ticker"]["ticker_sentiment_score"])
-                total_relevance += relevance
-                total_sentiment += sentiment * relevance
-
-    weighted_sentiment = total_sentiment / total_relevance
-
-def get_insider_transactions(ticker: str, start_date: datetime, end_date: datetime):
+def get_insider_transactions(ticker: str) -> pd.DataFrame:
+    # Dates not needed, goes back 20 years
     args = {
         "function": "INSIDER_TRANSACTIONS",
         "symbol": ticker
@@ -125,10 +107,6 @@ def get_insider_transactions(ticker: str, start_date: datetime, end_date: dateti
     df = pd.DataFrame(data)
     df.set_index("date", inplace=True)
     return df
-
-# def get_price_targets(ticker: str) -> Dict:
-#     yf = yfinance.Ticker(ticker)
-#     return yf.get_analyst_price_targets()
 
 def construct_url(**args):
     url = f'https://www.alphavantage.co/query?'
