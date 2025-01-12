@@ -1,9 +1,9 @@
 import pandas as pd
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import sattern.src.tools.weekday as weekday
 from datetime import datetime
 
-def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2) -> Tuple[pd.DataFrame, str]:
+def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2) -> Tuple[pd.DataFrame, Dict]:
     # Find periods where the data is similar
     stock_prices = financial_metrics["prices"]
     comp_start_index = len(stock_prices) - period - 1
@@ -69,24 +69,24 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
         sim_period_price_prediction.append(sim_period_price_prediction[i] + sim_period_difference[i])
 
     percent_change = (sim_period_price_prediction[-1] - stock_prices.iloc[-1]) / stock_prices.iloc[-1]
-    action = ""
+    data = {}
 
     if abs(percent_change) < 0.02:
-        action = "Hold"
+        data["action"] = "Hold"
     elif percent_change > 0.02:
         if percent_change > 0.10:
-            action = "Strong Buy"
+            data["action"] = "Strong Buy"
         else:
-            action = "Buy"
+            data["action"] = "Buy"
     elif percent_change < 0.02:
         if percent_change < 0.10:
-            action = "Strong Sell"
+            data["action"] = "Strong Sell"
         else:
-            action = "Sell"
+            data["action"] = "Sell"
 
     prediction_df = pd.DataFrame(data=sim_period_price_prediction, index=sim_period_dates, columns=["sattern"])
     highlight_df = highlight_df[~highlight_df.index.duplicated(keep='first')]
     prediction_df = prediction_df[~prediction_df.index.duplicated(keep='first')]
     combined_df = pd.concat([highlight_df, prediction_df], axis=1)
 
-    return (combined_df, action)
+    return (combined_df, data)

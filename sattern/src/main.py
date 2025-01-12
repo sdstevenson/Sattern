@@ -5,6 +5,7 @@ from sattern.src.tools.llm import run_llm
 from sattern.src.tools.trader import portfolio
 from typing import Dict
 import pandas as pd
+from datetime import datetime, timedelta, timezone
 
 def run_sattern(ticker: str = "ERJ"):
     ticker = "BZ=F"
@@ -17,10 +18,12 @@ def run_sattern(ticker: str = "ERJ"):
     return financial_metrics, decision
 
 def run_fund_manager(ticker: str, portfolio: portfolio):
+    end_date = datetime.now().replace(tzinfo=timezone.utc)
+    start_date = (end_date - timedelta(days=7200)).replace(tzinfo=timezone.utc)
     # Get Data
-    financial_metrics = api.get_financial_metrics(ticker)
+    financial_metrics = api.get_financial_metrics(ticker, start_date, end_date, True)
     # Get Metrics
-    df, actions = combine(financial_metrics, 10, 2)
+    df, actions = combine(ticker=ticker, df=financial_metrics, start_date=start_date, end_date=end_date, period=10)
     # Send to AI and retrieve decision
     llm_response = run_llm(ticker, df, actions, portfolio)
     print(llm_response)
