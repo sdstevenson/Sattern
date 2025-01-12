@@ -3,7 +3,7 @@ import os
 import json
 import pandas as pd
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Union, Optional, Dict, List
 from dotenv import load_dotenv
 
@@ -28,6 +28,8 @@ def get_financial_metrics(
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
     if isinstance(end_date, str):
         end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    start_date = start_date.replace(tzinfo=timezone.utc)
+    end_date = end_date.replace(tzinfo=timezone.utc)
 
     # Collect metrics
     prices_df = get_prices(ticker)
@@ -59,7 +61,7 @@ def get_prices(ticker: str) -> pd.DataFrame:
     for day in history["Time Series (Daily)"]:
         data.append(
             {
-            "date": datetime.strptime(day, "%Y-%m-%d"),
+            "date": datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc),
             "prices": float(history["Time Series (Daily)"][day]["4. close"]),
             "volume": float(history["Time Series (Daily)"][day]["5. volume"]),
             }
@@ -99,7 +101,7 @@ def get_insider_transactions(ticker: str) -> pd.DataFrame:
     for transaction in insider_transactions["data"]:
         data.append(
             {
-            "date": datetime.strptime(transaction["transaction_date"], "%Y-%m-%d"),
+            "date": datetime.strptime(transaction["transaction_date"], "%Y-%m-%d").replace(tzinfo=timezone.utc),
             "acquisition_or_disposal": transaction["acquisition_or_disposal"],
             "shares": transaction["shares"],
             "share_price": transaction["share_price"]
