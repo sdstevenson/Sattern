@@ -8,10 +8,10 @@ def analyze_news(data: Dict) -> Dict:
     total_sentiment = 0
     top_news = []
     for article in data["feed"]:
-        for rating in data[article]["ticker_sentiment"]:
+        for rating in article["ticker_sentiment"]:
             if rating["ticker"] == data:
-                relevance = float(rating["ticker"]["relevance_score"])
-                sentiment = float(rating["ticker"]["ticker_sentiment_score"])
+                relevance = float(rating["relevance_score"])
+                sentiment = float(rating["ticker_sentiment_score"])
                 total_relevance += relevance
                 total_sentiment += sentiment * relevance
                 if len(top_news <= 10):  # Only get the top 10 relevent stocks
@@ -19,29 +19,26 @@ def analyze_news(data: Dict) -> Dict:
                         "title": article["title"],
                         "url": article["url"],
                         "summary": article["summary"],
-                        "sentiment": rating["ticker"]["ticker_sentiment_label"]
+                        "sentiment": rating["ticker_sentiment_label"]
                     })
-    weighted_sentiment = total_sentiment / total_relevance
+    if total_relevance == 0:
+        weighted_sentiment = 0  # Avoid division by zero
+    else:
+        weighted_sentiment = total_sentiment / total_relevance
 
     if weighted_sentiment <= -0.35:
-        sentiment = "Bearish"
         action = "Strong Sell"
     elif weighted_sentiment <= -0.15:
-        sentiment = "Somewhat_Bearish"
         action = "Sell"
     elif weighted_sentiment < 0.15:
-        sentiment = "Neutral"
         action = "Hold"
     elif weighted_sentiment < 0.35:
-        sentiment = "Somewhat_Bullish"
         action = "Buy"
     else:
-        sentiment = "Bullish"
         action = "Strong Buy"
 
     data = {
         "top_news": top_news,
-        "sentiment": sentiment,
         "action": action
     }
     return data
@@ -51,6 +48,9 @@ def analyze_insider_transactions(df: pd.DataFrame):
     d_count = 0
     total_money_moved = 0
     total_shares_moved = 0
+
+    if 'acquisition_or_disposal' not in df.columns or 'shares' not in df.columns or 'share_price' not in df.columns:
+        return {"action": "Hold"}
 
     for _, row in df.iterrows():
         if pd.notnull(row["acquisition_or_disposal"]):
