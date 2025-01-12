@@ -11,8 +11,8 @@ load_dotenv()
 
 def get_financial_metrics(
         ticker: str,
-        start_date: Optional[Union[str, datetime]] = None, 
-        end_date: Optional[Union[str, datetime]] = None,
+        start_date: Union[str, datetime], 
+        end_date: Union[str, datetime],
         load_new: bool = False,
         cache: bool = False
     ) -> pd.DataFrame:
@@ -24,22 +24,20 @@ def get_financial_metrics(
             print(f"Error loading cached data: {e}")
             pass
 
-    if start_date is None or end_date is None:
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=7300)
     if isinstance(start_date, str):
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
     if isinstance(end_date, str):
         end_date = datetime.strptime(end_date, '%Y-%m-%d')
-    if start_date > end_date:
-        start_date, end_date = end_date, start_date
 
     # Collect metrics
     prices_df = get_prices(ticker)
     insider_transactions = get_insider_transactions(ticker)
 
     # Combine metrics -- TO DO for more metrics
-    financial_metrics = pd.concat([prices_df, insider_transactions], axis=1)
+    if insider_transactions is not None:
+        financial_metrics = pd.concat([prices_df, insider_transactions], axis=1)
+    else:
+        financial_metrics = prices_df
     financial_metrics = financial_metrics[(financial_metrics.index >= start_date) & (financial_metrics.index <= end_date)]
 
     if cache:
@@ -62,8 +60,8 @@ def get_prices(ticker: str) -> pd.DataFrame:
         data.append(
             {
             "date": datetime.strptime(day, "%Y-%m-%d"),
-            "close": history["Time Series (Daily)"][day]["4. close"],
-            "volume": history["Time Series (Daily)"][day]["5. volume"],
+            "prices": float(history["Time Series (Daily)"][day]["4. close"]),
+            "volume": float(history["Time Series (Daily)"][day]["5. volume"]),
             }
         )
     df = pd.DataFrame(data)
@@ -94,6 +92,9 @@ def get_insider_transactions(ticker: str) -> pd.DataFrame:
     }
     url = construct_url(**args)
     insider_transactions = requests.get(url).json()
+    if insider_transactions["data"] == []:
+        return None
+
     data = []
     for transaction in insider_transactions["data"]:
         data.append(
@@ -113,5 +114,4 @@ def construct_url(**args):
     for arg in args.keys():
         url += f"{arg}={args[arg]}&"
     url += f"apikey={os.getenv('STOCK_API_KEY')}"
-    print(url)
     return url
