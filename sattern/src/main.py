@@ -12,6 +12,7 @@ def run_sattern(ticker: str = "ERJ"):
     period = 10
     max_diff = 5
     financial_metrics = api.get_financial_metrics(ticker=ticker, load_new=True, cache=True)
+    # news = api.get_news(ticker=ticker, start_date=start_date)
     financial_metrics, decision = combine(df=financial_metrics, period=period, max_diff=max_diff, cache=True, ticker=ticker)
     # print(f"{financial_metrics}\n***{decision}***")
     display(data=financial_metrics, metrics_to_plot=["prices", "sattern", "sattern_highlight"], ticker=ticker, max_diff=max_diff)
@@ -22,8 +23,9 @@ def run_fund_manager(ticker: str, portfolio: portfolio):
     start_date = (end_date - timedelta(days=7200)).replace(tzinfo=timezone.utc)
     # Get Data
     financial_metrics = api.get_financial_metrics(ticker, start_date, end_date, True)
+    news = api.get_news(ticker, start_date, end_date)
     # Get Metrics
-    df, actions = combine(ticker=ticker, df=financial_metrics, start_date=start_date, end_date=end_date, period=10)
+    df, actions = combine(ticker=ticker, df=financial_metrics, news=news, period=10)
     # Send to AI and retrieve decision
     llm_response = run_llm(ticker, df, actions, portfolio)
     print(llm_response)
