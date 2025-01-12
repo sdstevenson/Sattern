@@ -47,16 +47,12 @@ def analyze_news(data: Dict) -> Dict:
     return data
 
 def analyze_insider_transactions(df: pd.DataFrame):
-            # "date": datetime.strptime(transaction["transaction_date"], "%Y-%m-%d"),
-            # "acquisition_or_disposal": transaction["acquisition_or_disposal"],
-            # "shares": transaction["shares"],
-            # "share_price": transaction["share_price"]
     a_count = 0
     d_count = 0
     total_money_moved = 0
     total_shares_moved = 0
 
-    for index, row in df.iterrows():
+    for _, row in df.iterrows():
         if pd.notnull(row["acquisition_or_disposal"]):
             shares = row["shares"]
             share_price = row["share_price"]
