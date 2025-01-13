@@ -21,5 +21,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 main = "sattern.src.main:main"
+sattern = "sattern.src.main:run_sattern"
 trader = "sattern.src.main:trader"
 backtester = "sattern.src.backtester:main"

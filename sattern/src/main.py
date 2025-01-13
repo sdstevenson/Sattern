@@ -7,17 +7,14 @@ from typing import Dict
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 
-def run_sattern(ticker: str = "ERJ"):
-    ticker = "BZ=F"
-    period = 10
-    max_diff = 5
+def run_sattern(ticker: str = "ERJ", period: int = 10, max_diff: int = 5):
     end_date = datetime.now().replace(tzinfo=timezone.utc)
     start_date = (end_date - timedelta(days=7200)).replace(tzinfo=timezone.utc)
 
     financial_metrics = api.get_financial_metrics(ticker, start_date, end_date)
     news = api.get_news(ticker, start_date, end_date)
     financial_metrics, decision = combine(ticker, financial_metrics, news, period)
-    # print(f"{financial_metrics}\n***{decision}***")
+    print(f"{financial_metrics}\n***{decision}***")
     display(data=financial_metrics, metrics_to_plot=["prices", "sattern", "sattern_highlight"], ticker=ticker, max_diff=max_diff)
     return financial_metrics, decision
 

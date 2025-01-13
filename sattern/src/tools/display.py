@@ -22,7 +22,7 @@ def highlight(data: pd.DataFrame, period:int, max_diff:int, fig=None, ax=None):
     if fig is None or ax is None:
         fig, ax = pyplot.subplots()
 
-    for i in range(len(data)):
+    for i in range(len(data.index) - period):
         if not pd.isna(data.iloc[i]):
             ax.axvspan(
                 data.index[i],
