@@ -16,7 +16,7 @@ def combine(ticker: str, df: pd.DataFrame, news: Dict, period: int, max_diff: in
     df.sort_index(inplace=True)
 
     if cache:
-        file_path = f'{Path("./sattern/src/data")}/{ticker}_stock_data.json'
+        file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_processed_data.json'
         df.to_json(path_or_buf=file_path, orient='columns', date_format='iso')
 
     return (df, actions)

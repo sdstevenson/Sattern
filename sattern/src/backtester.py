@@ -44,7 +44,7 @@ class Backtester:
         else:
             print(f"\nStarting Backtest on {self.ticker}...")
 
-        self.df = get_financial_metrics(ticker=self.ticker, start_date=self.start_date-timedelta(days=730), end_date=self.end_date, load_new=True, cache=False)
+        self.df = get_financial_metrics(ticker=self.ticker, start_date=self.start_date-timedelta(days=730), end_date=self.end_date)
         self.news = get_news(ticker=self.ticker, start_date=self.start_date, end_date=self.end_date)
 
         for curr_date in dates:

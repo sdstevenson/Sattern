@@ -13,16 +13,7 @@ def get_financial_metrics(
         ticker: str,
         start_date: Union[str, datetime], 
         end_date: Union[str, datetime],
-        load_new: bool = False,
-        cache: bool = False
     ) -> pd.DataFrame:
-    file_path = f'{Path("./sattern/src/data")}/{ticker}_stock_data.json'
-    if not load_new:
-        try:
-            return pd.read_json(file_path, orient='columns')
-        except Exception as e:
-            print(f"Error loading cached data: {e}")
-            pass
 
     if isinstance(start_date, str):
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
@@ -42,9 +33,6 @@ def get_financial_metrics(
         financial_metrics = prices_df
     financial_metrics = financial_metrics[(financial_metrics.index >= start_date) & (financial_metrics.index <= end_date)]
 
-    if cache:
-        financial_metrics.to_json(path_or_buf=file_path, orient='columns', date_format='iso')
-
     return financial_metrics
 
 def get_prices(ticker: str) -> pd.DataFrame:
@@ -54,20 +42,27 @@ def get_prices(ticker: str) -> pd.DataFrame:
         "symbol": ticker,
         "outputsize": "full",
     }
-    url = construct_url(**args)
-    history = requests.get(url).json()
-
-    data = []
-    for day in history["Time Series (Daily)"]:
-        data.append(
-            {
-            "date": datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc),
-            "prices": float(history["Time Series (Daily)"][day]["4. close"]),
-            "volume": float(history["Time Series (Daily)"][day]["5. volume"]),
-            }
-        )
-    df = pd.DataFrame(data)
-    df.set_index("date", inplace=True)
+    file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_prices.json'
+    if not os.path.exists(file_path):
+        url = construct_url(**args)
+        history = requests.get(url).json()
+        data = []
+        for day in history["Time Series (Daily)"]:
+            data.append(
+                {
+                "date": datetime.strptime(day, '%Y-%m-%d').replace(tzinfo=timezone.utc),
+                "prices": float(history["Time Series (Daily)"][day]["4. close"]),
+                "volume": float(history["Time Series (Daily)"][day]["5. volume"]),
+                }
+            )
+        df = pd.DataFrame(data)
+        df.set_index("date", inplace=True)
+        with open(file_path, 'w') as f:
+            df.to_json(path_or_buf=f, orient='columns', date_format='iso')
+    else:
+        with open(file_path, 'r') as f:
+            df = pd.read_json(path_or_buf=f, orient='columns')
+        df.index = pd.to_datetime(df.index, format='%Y-%m-%d').tz_convert(tz=timezone.utc)
 
     return df
 
@@ -78,12 +73,16 @@ def get_news(ticker: str, start_date: datetime, end_date: datetime) -> Dict:
         "time_from": start_date.strftime("%Y%m%dT%H%M"),
         "time_to": end_date.strftime("%Y%m%dT%H%M"),
         "sort": "RELEVANCE",
-        "limit": "1",
     }
-    url = construct_url(**args)
-    news = requests.get(url).json()
-    # with open(f'{Path("./sattern/src/data")}/{ticker}_news.json', 'w') as f:
-    #     json.dump(news, f)
+    file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_news.json'
+    if not os.path.exists(file_path):
+        url = construct_url(**args)
+        news = requests.get(url).json()
+        with open(file_path, 'w') as f:
+            json.dump(news, f)
+    else:
+        with open(file_path, 'r') as f:
+            news = json.load(f)
     return news
 
 def get_insider_transactions(ticker: str) -> pd.DataFrame:
