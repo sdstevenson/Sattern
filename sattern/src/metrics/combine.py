@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 def combine(ticker: str, df: pd.DataFrame, news: Dict, period: int, max_diff: int = 2, cache: bool = False) -> Tuple[pd.DataFrame, Dict]:
     actions: Dict[str, str] = {}
     sattern_df, actions["sattern"] = sattern(df, period, max_diff)
-    actions["news"] = analyze_news(news)
+    actions["news"] = analyze_news(ticker, news)
     actions["insider_trades"] = analyze_insider_transactions(df)
     # ... add other metrics here
     df = pd.concat([sattern_df, df], axis=1)

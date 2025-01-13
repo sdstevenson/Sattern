@@ -2,19 +2,19 @@
 import pandas as pd
 from typing import Dict
 
-def analyze_news(data: Dict) -> Dict:
+def analyze_news(ticker: str, data: Dict) -> Dict:
     # Get the average sentiment, weighted by the relevance score
     total_relevance = 0
     total_sentiment = 0
     top_news = []
     for article in data["feed"]:
         for rating in article["ticker_sentiment"]:
-            if rating["ticker"] == data:
+            if rating["ticker"] == ticker:
                 relevance = float(rating["relevance_score"])
                 sentiment = float(rating["ticker_sentiment_score"])
                 total_relevance += relevance
                 total_sentiment += sentiment * relevance
-                if len(top_news <= 10):  # Only get the top 10 relevent stocks
+                if len(top_news) <= 10:  # Only get the top 10 relevent stocks
                     top_news.append({
                         "title": article["title"],
                         "url": article["url"],
