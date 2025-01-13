@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
-from typing import Union, Tuple
+from typing import Union, Tuple, Dict
 import pandas as pd
 import matplotlib.pyplot as plt
 from sattern.src.metrics.combine import combine
-from sattern.src.tools.api import get_financial_metrics
+from sattern.src.tools.api import get_financial_metrics, get_news
 from sattern.src.tools.trader import portfolio
 from pathlib import Path
 import json
@@ -31,7 +31,8 @@ class Backtester:
         self.portfolio_value = 0
         self.portfolio_values = []
 
-        self.df = ""
+        self.df: pd.DataFrame = ""
+        self.news: Dict = {}
 
     def run_backtesting(self):
         dates = pd.date_range(self.start_date, self.end_date, freq="B")
@@ -43,13 +44,22 @@ class Backtester:
         else:
             print(f"\nStarting Backtest on {self.ticker}...")
 
-        df = get_financial_metrics(ticker=self.ticker, start_date=self.start_date-timedelta(days=730), end_date=self.end_date, load_new=True, cache=False)
-        self.df = df
+        self.df = get_financial_metrics(ticker=self.ticker, start_date=self.start_date-timedelta(days=730), end_date=self.end_date, load_new=True, cache=False)
+        self.news = get_news(ticker=self.ticker, start_date=self.start_date, end_date=self.end_date)
 
         for curr_date in dates:
             curr_start_date = (curr_date - timedelta(days=730))
-            test_df = df.loc[curr_start_date:curr_date].copy()
-            metrics_df, action = combine(test_df, self.period)
+            # Only pass in relevant data
+            test_df = self.df.loc[curr_start_date:curr_date].copy()
+            filtered_news = []
+            test_news = json.loads(json.dumps(self.news))
+            for article in self.news["feed"]:
+                time_published = datetime.strptime(article["time_published"], "%Y%m%dT%H%M%S")
+                if time_published < curr_date:
+                    filtered_news.append(article)
+            test_news["feed"] = filtered_news
+
+            metrics_df, action = combine(ticker=self.ticker, df=test_df, news=test_news, period=self.period)
 
             index = -1
             while True:
@@ -57,8 +67,7 @@ class Backtester:
                 if not pd.isna(curr_price):
                     break
                 index -= 1
-            
-            # TO DO change action for multiple metrics
+
             executed_quantity = self.portfolio.execute_trade(action=action["sattern"], current_price=curr_price)
 
             total_value = self.portfolio.cash + self.portfolio.stock * curr_price
