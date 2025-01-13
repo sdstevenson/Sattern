@@ -54,7 +54,7 @@ class Backtester:
             filtered_news = []
             test_news = json.loads(json.dumps(self.news))
             for article in self.news["feed"]:
-                time_published = datetime.strptime(article["time_published"], "%Y%m%dT%H%M%S")
+                time_published = datetime.strptime(article["time_published"], "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc)
                 if time_published < curr_date:
                     filtered_news.append(article)
             test_news["feed"] = filtered_news
@@ -127,7 +127,8 @@ def main():
     end = datetime.now()
     all_data = {}
     # stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
-    stocks = ["NG=F", "BZ=F", "KC=F"]
+    # stocks = ["NG=F", "BZ=F", "KC=F"]
+    stocks = ["ERJ"]
     save_name = "commodities"
     avg_returns = 0
     for ticker in stocks:
