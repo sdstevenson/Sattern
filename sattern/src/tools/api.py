@@ -91,23 +91,34 @@ def get_insider_transactions(ticker: str) -> pd.DataFrame:
         "function": "INSIDER_TRANSACTIONS",
         "symbol": ticker
     }
-    url = construct_url(**args)
-    insider_transactions = requests.get(url).json()
-    if insider_transactions["data"] == []:
-        return None
-
-    data = []
-    for transaction in insider_transactions["data"]:
-        data.append(
-            {
-            "date": datetime.strptime(transaction["transaction_date"], "%Y-%m-%d").replace(tzinfo=timezone.utc),
-            "acquisition_or_disposal": transaction["acquisition_or_disposal"],
-            "shares": transaction["shares"],
-            "share_price": transaction["share_price"]
-            }
-        )
-    df = pd.DataFrame(data)
-    df.set_index("date", inplace=True)
+    file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_insider_transactions.json'
+    if not os.path.exists(file_path):
+        url = construct_url(**args)
+        insider_transactions = requests.get(url).json()
+        if insider_transactions["data"] == []:
+            with open(file_path, 'w') as f:
+                pass
+            return None
+        data = []
+        for transaction in insider_transactions["data"]:
+            data.append(
+                {
+                "date": datetime.strptime(transaction["transaction_date"], "%Y-%m-%d").replace(tzinfo=timezone.utc),
+                "acquisition_or_disposal": transaction["acquisition_or_disposal"],
+                "shares": transaction["shares"],
+                "share_price": transaction["share_price"]
+                }
+            )
+        df = pd.DataFrame(data)
+        df.set_index("date", inplace=True)
+        with open(file_path, 'w') as f:
+            df.to_json(path_or_buf=f, orient='columns', date_format='iso')
+    else:
+        with open(file_path, 'r') as f:
+            if os.stat(file_path).st_size == 0:
+                return None
+            df = pd.read_json(path_or_buf=f, orient='columns')
+        df.index = pd.to_datetime(df.index, format='%Y-%m-%d').tz_convert(tz=timezone.utc)
     return df
 
 def construct_url(**args):
