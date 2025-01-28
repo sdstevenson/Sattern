@@ -1,7 +1,89 @@
+"""Process various metrics"""
 import pandas as pd
-from typing import List, Tuple, Dict
-import sattern.src.tools.weekday as weekday
-from datetime import datetime
+from typing import Dict, Tuple, List
+from datetime import datetime, timedelta
+
+def analyze_news(ticker: str, data: Dict) -> Dict:
+    # Get the average sentiment, weighted by the relevance score
+    total_relevance = 0
+    total_sentiment = 0
+    top_news = []
+    for article in data["feed"]:
+        for rating in article["ticker_sentiment"]:
+            if rating["ticker"] == ticker:
+                relevance = float(rating["relevance_score"])
+                sentiment = float(rating["ticker_sentiment_score"])
+                total_relevance += relevance
+                total_sentiment += sentiment * relevance
+                if len(top_news) <= 10:  # Only get the top 10 relevent stocks
+                    top_news.append({
+                        "title": article["title"],
+                        "url": article["url"],
+                        "summary": article["summary"],
+                        "sentiment": rating["ticker_sentiment_label"]
+                    })
+    if total_relevance == 0:
+        weighted_sentiment = 0  # Avoid division by zero
+    else:
+        weighted_sentiment = total_sentiment / total_relevance
+
+    if weighted_sentiment <= -0.35:
+        action = "Strong Sell"
+    elif weighted_sentiment <= -0.15:
+        action = "Sell"
+    elif weighted_sentiment < 0.15:
+        action = "Hold"
+    elif weighted_sentiment < 0.35:
+        action = "Buy"
+    else:
+        action = "Strong Buy"
+
+    data = {
+        "top_news": top_news,
+        "action": action
+    }
+    return data
+
+def analyze_insider_transactions(df: pd.DataFrame):
+    a_count = 0
+    d_count = 0
+    total_money_moved = 0
+    total_shares_moved = 0
+
+    if 'acquisition_or_disposal' not in df.columns or 'shares' not in df.columns or 'share_price' not in df.columns:
+        return {"action": "Hold"}
+
+    for _, row in df.iterrows():
+        if pd.notnull(row["acquisition_or_disposal"]):
+            shares = row["shares"]
+            share_price = row["share_price"]
+            money_moved = shares * share_price
+
+            if row["acquisition_or_disposal"] == "A":
+                a_count += 1
+                total_shares_moved += shares
+                total_money_moved += money_moved
+            elif row["acquisition_or_disposal"] == "D":
+                d_count += 1
+                total_shares_moved -= shares
+                total_money_moved -= money_moved
+
+    if total_shares_moved < -1000 and total_money_moved < -100000:
+        action = "Strong Sell"
+    elif total_shares_moved < -500:
+        action = "Sell"
+    elif -500 <= total_shares_moved <= 500:
+        action = "Hold"
+    elif total_shares_moved > 1000 and total_money_moved > 100000:
+        action = "Strong Buy"
+    else:
+        action = "Buy"
+
+
+    result = {
+        "action": action,
+    }
+    return result
 
 def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2) -> Tuple[pd.DataFrame, Dict]:
     # Find periods where the data is similar
@@ -61,8 +143,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
 
     # Calculate price movements and dates
     sim_period_price_prediction: List[float] = []
-    weekday_tool = weekday.weekday(increment_hours=24)
-    sim_period_dates: List[datetime] = [stock_prices.index[-1]] + weekday_tool.get_next_n_datetimes(n=period, start=stock_prices.index[-1])
+    sim_period_dates = pd.date_range(start=datetime.strptime(stock_prices.index[-1]), end=datetime.strptime(stock_prices.index[-1]) + timedelta(days=period), periods=period, freq='B')
 
     sim_period_price_prediction.append(stock_prices.iloc[-1])
     for i in range(len(sim_period_difference)):

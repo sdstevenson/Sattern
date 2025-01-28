@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import pandas as pd
 from typing import Dict
-from sattern.src.tools.trader import portfolio
+from sattern.src.trader import portfolio
 from openai import OpenAIError
 
 load_dotenv()

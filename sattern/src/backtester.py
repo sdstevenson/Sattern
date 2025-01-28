@@ -3,8 +3,8 @@ from typing import Union, Tuple, Dict
 import pandas as pd
 import matplotlib.pyplot as plt
 from sattern.src.metrics.combine import combine
-from sattern.src.tools.api import get_financial_metrics, get_news
-from sattern.src.tools.trader import portfolio
+from sattern.src.api import get_financial_metrics, get_news
+from sattern.src.trader import portfolio
 from pathlib import Path
 import json
 
