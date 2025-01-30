@@ -3,12 +3,12 @@ import pandas as pd
 from typing import Dict, Tuple, List
 from datetime import datetime, timedelta
 
-def analyze_news(ticker: str, data: Dict) -> Dict:
+def process_news(ticker: str, news_data: Dict) -> Dict:
     # Get the average sentiment, weighted by the relevance score
     total_relevance = 0
     total_sentiment = 0
     top_news = []
-    for article in data["feed"]:
+    for article in news_data["feed"]:
         for rating in article["ticker_sentiment"]:
             if rating["ticker"] == ticker:
                 relevance = float(rating["relevance_score"])
@@ -38,13 +38,13 @@ def analyze_news(ticker: str, data: Dict) -> Dict:
     else:
         action = "Strong Buy"
 
-    data = {
+    p_news = {
         "top_news": top_news,
         "action": action
     }
-    return data
+    return p_news
 
-def analyze_insider_transactions(df: pd.DataFrame):
+def process_insider_transactions(df: pd.DataFrame):
     a_count = 0
     d_count = 0
     total_money_moved = 0
@@ -85,15 +85,14 @@ def analyze_insider_transactions(df: pd.DataFrame):
     }
     return result
 
-def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2) -> Tuple[pd.DataFrame, Dict]:
-    # Find periods where the data is similar
-    stock_prices = financial_metrics["prices"]
-    comp_start_index = len(stock_prices) - period - 1
+def sattern(df: pd.DataFrame, period: int = 10, max_diff: int = 2) -> Tuple[pd.DataFrame, Dict]:
+    df = df.sort_index()
 
     # For each element in the current period, find the difference to the previous element
+    comp_start_index = len(df) - period - 1
     curr_period_diff = []
-    for i in range(comp_start_index-1, len(stock_prices)-1):
-        curr_period_diff.append(stock_prices.iloc[i+1] - stock_prices.iloc[i])
+    for i in range(comp_start_index-1, len(df)-1):
+        curr_period_diff.append(df.iloc[i+1] - df.iloc[i])
 
     curr_comp_start = 0
     curr_comp_length = 0
@@ -102,7 +101,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
     index = 0
 
     while(index < (comp_start_index - period)):
-        curr_diff = curr_period_diff[curr_comp_length] - (stock_prices.iloc[curr_comp_start + curr_comp_length + 1] - stock_prices.iloc[curr_comp_start + curr_comp_length])
+        curr_diff = curr_period_diff[curr_comp_length] - (df.iloc[curr_comp_start + curr_comp_length + 1] - df.iloc[curr_comp_start + curr_comp_length])
         curr_diff_squared = curr_diff * abs(curr_diff)
         curr_comp_diff += curr_diff_squared
 
@@ -125,7 +124,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
         return pd.DataFrame(columns=["sattern", "sattern_highlight"]), "Hold"
     else:
         diff_data = [diff for _, diff in similar_periods]
-        index = [stock_prices.index[start] for start, _ in similar_periods]
+        index = [df.index[start] for start, _ in similar_periods]
         highlight_df = pd.DataFrame(data=diff_data, index=index, columns=["sattern_highlight"])
 
     # Use similar periods to predict the next stock price
@@ -135,7 +134,7 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
         for x in range(len(similar_periods)):
             index = similar_periods[x][0] + i
             # Weight by the difference
-            sim_period_difference[i] += (stock_prices.iloc[index + 1] - stock_prices.iloc[index]) * (max_diff - similar_periods[x][1])
+            sim_period_difference[i] += (df.iloc[index + 1] - df.iloc[index]) * (max_diff - similar_periods[x][1])
 
     # Normalize
     total_difference = sum([similar_periods[i][1] for i in range(len(similar_periods))])
@@ -143,13 +142,13 @@ def sattern(financial_metrics: pd.DataFrame, period: int = 10, max_diff: int = 2
 
     # Calculate price movements and dates
     sim_period_price_prediction: List[float] = []
-    sim_period_dates = pd.date_range(start=datetime.strptime(stock_prices.index[-1]), end=datetime.strptime(stock_prices.index[-1]) + timedelta(days=period), periods=period, freq='B')
+    sim_period_dates = pd.date_range(start=datetime.strptime(df.index[-1]), end=datetime.strptime(df.index[-1]) + timedelta(days=period), periods=period, freq='B')
 
-    sim_period_price_prediction.append(stock_prices.iloc[-1])
+    sim_period_price_prediction.append(df.iloc[-1])
     for i in range(len(sim_period_difference)):
         sim_period_price_prediction.append(sim_period_price_prediction[i] + sim_period_difference[i])
 
-    percent_change = (sim_period_price_prediction[-1] - stock_prices.iloc[-1]) / stock_prices.iloc[-1]
+    percent_change = (sim_period_price_prediction[-1] - df.iloc[-1]) / df.iloc[-1]
     data = {}
 
     if abs(percent_change) < 0.02:
