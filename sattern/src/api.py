@@ -9,11 +9,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def get_financial_metrics(
-        ticker: str,
-        start_date: Union[str, datetime], 
-        end_date: Union[str, datetime],
-    ) -> pd.DataFrame:
+# TO DO: Finish up financial metrics
+def get_financial_metrics(ticker: str, start_date: Union[str, datetime], end_date: Union[str, datetime]) -> pd.DataFrame:
 
     if isinstance(start_date, str):
         start_date = datetime.strptime(start_date, '%Y-%m-%d')
@@ -44,6 +41,7 @@ def get_prices(ticker: str) -> pd.DataFrame:
     }
     file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_prices.json'
     if not os.path.exists(file_path):
+        print("Fetching prices from API")
         url = construct_url(**args)
         history = requests.get(url).json()
         data = []
@@ -76,6 +74,7 @@ def get_news(ticker: str, start_date: datetime, end_date: datetime) -> Dict:
     }
     file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_news.json'
     if not os.path.exists(file_path):
+        print("Fetching news from API")
         url = construct_url(**args)
         news = requests.get(url).json()
         with open(file_path, 'w') as f:
@@ -86,16 +85,18 @@ def get_news(ticker: str, start_date: datetime, end_date: datetime) -> Dict:
     return news
 
 def get_insider_transactions(ticker: str) -> pd.DataFrame:
-    # Dates not needed, goes back 20 years
+    # No date input
     args = {
         "function": "INSIDER_TRANSACTIONS",
         "symbol": ticker
     }
     file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_insider_transactions.json'
     if not os.path.exists(file_path):
+        print("Fetching insider transactions from API")
         url = construct_url(**args)
         insider_transactions = requests.get(url).json()
         if insider_transactions["data"] == []:
+            print(f"No insider transactions found for {ticker}")
             with open(file_path, 'w') as f:
                 pass
             return None
@@ -116,12 +117,13 @@ def get_insider_transactions(ticker: str) -> pd.DataFrame:
     else:
         with open(file_path, 'r') as f:
             if os.stat(file_path).st_size == 0:
+                print(f"No insider transactions found for {ticker}")
                 return None
             df = pd.read_json(path_or_buf=f, orient='columns')
         df.index = pd.to_datetime(df.index, format='%Y-%m-%d').tz_convert(tz=timezone.utc)
     return df
 
-def construct_url(**args):
+def construct_url(**args) -> str:
     url = f'https://www.alphavantage.co/query?'
     for arg in args.keys():
         url += f"{arg}={args[arg]}&"
