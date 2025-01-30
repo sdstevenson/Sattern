@@ -118,8 +118,7 @@ def get_insider_transactions(ticker: str) -> pd.DataFrame:
             if os.stat(file_path).st_size == 0:
                 print(f"No insider transactions found for {ticker}")
                 return None
-            df = pd.read_json(path_or_buf=f, orient='columns')
-        df.index = pd.to_datetime(df.index, format='%Y-%m-%d').tz_convert(tz=timezone.utc)
+            df = pd.read_json(path_or_buf=f, orient='records')
     return df
 
 def construct_url(**args) -> str:

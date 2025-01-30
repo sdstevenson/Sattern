@@ -44,14 +44,20 @@ def process_news(ticker: str, news_data: Dict) -> Dict:
     }
     return p_news
 
-def process_insider_transactions(df: pd.DataFrame):
+def process_insider_transactions(df: pd.DataFrame) -> Dict:
     a_count = 0
     d_count = 0
     total_money_moved = 0
     total_shares_moved = 0
 
-    if 'acquisition_or_disposal' not in df.columns or 'shares' not in df.columns or 'share_price' not in df.columns:
+    # Ensure columns exist
+    required_cols = ["acquisition_or_disposal", "shares", "share_price"]
+    if not all(col in df.columns for col in required_cols):
         return {"action": "Hold"}
+
+    # Convert numeric columns to floats
+    df["shares"] = pd.to_numeric(df["shares"], errors="coerce")
+    df["share_price"] = pd.to_numeric(df["share_price"], errors="coerce")
 
     for _, row in df.iterrows():
         if pd.notnull(row["acquisition_or_disposal"]):
@@ -78,7 +84,6 @@ def process_insider_transactions(df: pd.DataFrame):
         action = "Strong Buy"
     else:
         action = "Buy"
-
 
     result = {
         "action": action,
