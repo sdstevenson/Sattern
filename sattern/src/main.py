@@ -1,57 +1,46 @@
-import sattern.src.api as api 
-from sattern.src.metrics.combine import combine
-from sattern.src.display import display
-from sattern.src.llm import run_llm
-from sattern.src.trader import portfolio
+from sattern.src import api, display, llm, trader, process
 from typing import Dict
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 
-def run_sattern(ticker: str = "ERJ", period: int = 10, max_diff: int = 5):
-    end_date = datetime.now().replace(tzinfo=timezone.utc)
-    start_date = (end_date - timedelta(days=7200)).replace(tzinfo=timezone.utc)
-
-    financial_metrics = api.get_financial_metrics(ticker, start_date, end_date)
-    news = api.get_news(ticker, start_date, end_date)
-    financial_metrics, decision = combine(ticker, financial_metrics, news, period)
-    print(f"{financial_metrics}\n***{decision}***")
-    display(data=financial_metrics, metrics_to_plot=["prices", "sattern", "sattern_highlight"], ticker=ticker, max_diff=max_diff)
-    return financial_metrics, decision
-
-def run_fund_manager(ticker: str, portfolio: portfolio):
-    end_date = datetime.now().replace(tzinfo=timezone.utc)
-    start_date = (end_date - timedelta(days=7200)).replace(tzinfo=timezone.utc)
-    period = 10
-    max_diff = 2
+def run_fund_manager(ticker: str, start_date: datetime, end_date: datetime):
+    period, max_diff = 10, 2
     cache = True
-    # Get Data
-    financial_metrics = api.get_financial_metrics(ticker, start_date, end_date)
-    news = api.get_news(ticker, start_date, end_date)
-    # Get Metrics
-    df, actions = combine(ticker, financial_metrics, news, period, max_diff, cache)
-    # Send to AI and retrieve decision
-    llm_response = run_llm(ticker, df, actions, portfolio)
-    print(llm_response)
-    # Execute trade
-    index = -1
-    while True:
-        curr_price = df.iloc[index]['prices']
-        if not pd.isna(curr_price):
-            break
-        index -= 1
-    portfolio.execute_trade(llm_response["action"], curr_price, llm_response["quantity"])
-    print(portfolio)
 
-def trader():
-    curr_portfolio = portfolio(10000, 0)
-    run_fund_manager("ERJ", curr_portfolio)
+    portfolio = trader.portfolio(10000, 0)
+    prices = api.get_prices(ticker)
+    news = api.get_news(ticker, start_date, end_date)
+    insider_trades = api.get_insider_transactions(ticker)
+    # financial_metrics = api.get_financial_metrics(ticker, start_date, end_date)
+
+    p_news = process.process_news(ticker, news)
+    p_insider_transactions = process.process_insider_transactions(insider_trades)
+    p_sattern, sattern_action = process.sattern(prices["prices"], period, max_diff)
+    # for i in range(len(p_sattern)):
+    #     print(f"{p_sattern.index[i]}: Highlight: {p_sattern.iloc[i]['highlight']}, Sattern: {p_sattern.iloc[i]['sattern']}")
+    # display_obj = display.custom_plot(ticker, prices["prices"])
+    # display_obj.highlight(p_sattern["highlight"], period, max_diff, "yellow")
+    # display_obj.plot(p_sattern["sattern"], "sattern", "green")
+    # display_obj.show()
+
+    actions = {
+        "news": p_news,
+        "insider_transactions": p_insider_transactions,
+        "sattern": sattern_action
+    }
+
+    p_llm = llm.run_llm(ticker, prices, actions, portfolio)
+    print(f"AI Decision: {p_llm['action']} {p_llm['quantity']}, prediction {p_llm['prediction']}")
+
+    # Execute trade
+    portfolio.execute_trade(p_llm['action'], prices['prices'].iloc[0], p_llm['quantity'], True)
+    print(portfolio)
 
 def main():
     ticker = "ERJ"
     end_date = datetime.now().replace(tzinfo=timezone.utc)
     start_date = (end_date - timedelta(days=7200)).replace(tzinfo=timezone.utc)
-    api.get_financial_metrics(ticker, start_date, end_date)
-    api.get_news(ticker, start_date, end_date)
+    run_fund_manager(ticker, start_date, end_date)
 
 if __name__ == "__main__":
     main()

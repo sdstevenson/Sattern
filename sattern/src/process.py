@@ -52,7 +52,7 @@ def process_insider_transactions(df: pd.DataFrame) -> Dict:
 
     # Ensure columns exist
     required_cols = ["acquisition_or_disposal", "shares", "share_price"]
-    if not all(col in df.columns for col in required_cols):
+    if df is None or not all(col in df.columns for col in required_cols):
         return {"action": "Hold"}
 
     # Convert numeric columns to floats
@@ -157,7 +157,10 @@ def sattern(df:pd.DataFrame, period:int, max_diff:int) -> Tuple[pd.DataFrame, Di
         sim_period_price_prediction.append(sim_period_price_prediction[i] + sim_period_difference[i])
 
     percent_change = (sim_period_price_prediction[-1] - df.iloc[0]) / df.iloc[0]
-    sattern_action = {}
+    sattern_action = {
+        "sim_periods": similar_periods,
+        "price_prediction": sim_period_price_prediction[-1]
+    }
     if abs(percent_change) < 0.02:
         sattern_action["action"] = "Hold"
     elif percent_change > 0.02:
