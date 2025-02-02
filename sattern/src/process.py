@@ -90,7 +90,7 @@ def process_insider_transactions(df: pd.DataFrame) -> Dict:
     }
     return p_insider_transactions
 
-def sattern(df:pd.DataFrame, period:int, max_diff:int) -> Tuple[pd.DataFrame, Dict]:
+def sattern(df:pd.DataFrame, period:int=10, max_diff:int=2) -> Tuple[pd.DataFrame, Dict]:
     # For each element in the current period, find the difference to the previous element
     curr_period_diff: List[float] = []
     for i in range(period, -1, -1):
@@ -99,11 +99,11 @@ def sattern(df:pd.DataFrame, period:int, max_diff:int) -> Tuple[pd.DataFrame, Di
         # print(f"Diff: {df.iloc[i] - df.iloc[i+1]}")
         curr_period_diff.append(float(df.iloc[i] - df.iloc[i+1]))
 
-    curr_comp_start:int = len(df) - 1
+    curr_comp_start:int = len(df) - 2
     curr_comp_length:int = 0
     curr_comp_diff:float = 0.0
     similar_periods: List[Tuple[int, float]] = []   # Store start index and difference of each period
-    index:int = len(df) - 1
+    index:int = len(df) - 2
 
     while(index > period):
         curr_diff:float = curr_period_diff[curr_comp_length] - float(df.iloc[curr_comp_start - curr_comp_length - 1] - df.iloc[curr_comp_start - curr_comp_length])
@@ -139,7 +139,7 @@ def sattern(df:pd.DataFrame, period:int, max_diff:int) -> Tuple[pd.DataFrame, Di
     for i in range(period):
         period_difference.append(0.0)
         for x in range(len(similar_periods)):
-            index = similar_periods[x][0] + i
+            index = similar_periods[x][0] - i
             # Weight by how similar the period is to the to the most recent <period> days
             period_difference[i] += (df.iloc[index] - df.iloc[index + 1]) * (max_diff - similar_periods[x][1])
 
