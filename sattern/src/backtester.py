@@ -2,23 +2,18 @@ from datetime import datetime, timedelta, timezone
 from typing import Union, Tuple, Dict
 import pandas as pd
 import matplotlib.pyplot as plt
-from sattern.src.metrics.combine import combine
-from sattern.src.api import get_financial_metrics, get_news
+from sattern.src import api, process
 from sattern.src.trader import portfolio
 from pathlib import Path
 import json
 
 
 class Backtester:
-    def __init__(self, ticker: str, start_date: Union[datetime, str], end_date: Union[datetime, str], init_capital: float, display: bool, period):
+    def __init__(self, ticker: str, start_date: datetime, end_date: datetime, init_capital: float, display: bool, period):
         self.ticker = ticker
         self.display = display
         self.period = period
 
-        if type(start_date) == str:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d')
-        if type(end_date) == str:
-            end_date = datetime.strptime(end_date, '%Y-%m-%d')
         if start_date > end_date:
             start_date, end_date = end_date, start_date
         if end_date > datetime.now():
@@ -31,8 +26,8 @@ class Backtester:
         self.portfolio_value = 0
         self.portfolio_values = []
 
-        self.df: pd.DataFrame = ""
-        self.news: Dict = {}
+        self.prices: pd.DataFrame = api.get_prices(ticker)
+        # self.news: Dict = api.get_news(ticker)
 
     def run_backtesting(self):
         dates = pd.date_range(self.start_date, self.end_date, freq="B")
@@ -44,31 +39,30 @@ class Backtester:
         else:
             print(f"\nStarting Backtest on {self.ticker}...")
 
-        self.df = get_financial_metrics(ticker=self.ticker, start_date=self.start_date-timedelta(days=730), end_date=self.end_date)
-        self.news = get_news(ticker=self.ticker, start_date=self.start_date, end_date=self.end_date)
-
         for curr_date in dates:
             curr_start_date = (curr_date - timedelta(days=730))
             # Only pass in relevant data
-            test_df = self.df.loc[curr_start_date:curr_date].copy()
-            filtered_news = []
-            test_news = json.loads(json.dumps(self.news))
-            for article in self.news["feed"]:
-                time_published = datetime.strptime(article["time_published"], "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc)
-                if time_published < curr_date:
-                    filtered_news.append(article)
-            test_news["feed"] = filtered_news
+            test_df = self.prices.loc[curr_date:curr_start_date].copy()
+            # filtered_news = []
+            # test_news = json.loads(json.dumps(self.news))
+            # for article in self.news["feed"]:
+            #     time_published = datetime.strptime(article["time_published"], "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc)
+            #     if time_published < curr_date:
+            #         filtered_news.append(article)
+            # test_news["feed"] = filtered_news
 
-            metrics_df, action = combine(ticker=self.ticker, df=test_df, news=test_news, period=self.period)
+            # p_news = process.process_news(self.ticker, test_news)
+            # p_insider_transactions = process.process_insider_transactions(insider_trades)
+            p_sattern, sattern_action = process.sattern(test_df["prices"])
 
-            index = -1
-            while True:
-                curr_price = test_df.iloc[index]['prices']
-                if not pd.isna(curr_price):
-                    break
-                index -= 1
+            actions = {
+                # "news": p_news,
+                # "insider_transactions": p_insider_transactions,
+                "sattern": sattern_action
+            }
 
-            executed_quantity = self.portfolio.execute_trade(action=action["sattern"], current_price=curr_price)
+            curr_price = test_df.iloc[0]['prices']
+            executed_quantity = self.portfolio.execute_trade(action=actions['sattern']['action'], current_price=curr_price)
 
             total_value = self.portfolio.cash + self.portfolio.stock * curr_price
             self.portfolio_values.append(
@@ -78,7 +72,7 @@ class Backtester:
 
             if self.display:
                 print(
-                    f"{curr_date.strftime('%Y-%m-%d'):<12} {self.ticker:<6} {action:<6} {executed_quantity:>8} {curr_price:>8.2f} "
+                    f"{curr_date.strftime('%Y-%m-%d'):<12} {self.ticker:<6} {actions['sattern']['action']:<6} {executed_quantity:>8} {curr_price:>8.2f} "
                     f"{self.portfolio.cash:>12.2f} {self.portfolio.stock:>8} {total_value:>12.2f}"
                 )
 
@@ -90,7 +84,30 @@ class Backtester:
         print(f"Total Return: {total_return:.2f}%")
 
         # Calculate stock growth
-        total_growth = ((self.df["prices"].iloc[-1] - self.df["prices"].iloc[0]) / self.df["prices"].iloc[0])
+        self.start_date = pd.to_datetime(self.start_date, utc=True).normalize()
+        self.end_date = pd.to_datetime(self.end_date, utc=True).normalize()
+
+        # Ensure dates are valid
+        attempts = 0
+        while attempts < 4:
+            try:
+                start_price = self.prices.loc[self.start_date]['prices']
+                break
+            except KeyError:
+                self.start_date = self.start_date - timedelta(days=1)
+                attempts += 1
+        attempts = 0
+        while attempts < 4:
+            try:
+                end_price = self.prices.loc[self.end_date]['prices']
+                break
+            except KeyError:
+                self.end_date = self.end_date - timedelta(days=1)
+                attempts += 1
+
+        total_growth = (
+            (end_price - start_price) / start_price
+        )
         print(f"Stock Growth with No Trading: {total_growth*100:.2f}%")
 
         # Compute daily returns
@@ -123,7 +140,7 @@ class Backtester:
         return performance_df, total_growth
 
 def main():
-    start = datetime.now() - timedelta(days=730)
+    start = datetime.now() - timedelta(days=3650)
     end = datetime.now()
     all_data = {}
     # stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
@@ -132,11 +149,10 @@ def main():
     save_name = "commodities"
     avg_returns = 0
     for ticker in stocks:
-        backtester = Backtester(ticker, start, end, 10000, False, 5)
+        backtester = Backtester(ticker, start, end, 10000, True, 5)
         backtester.run_backtesting()
         df, total_return = backtester.analyze_performance()
         avg_returns += total_return
-
         all_data[ticker] = df.dropna().to_dict()
 
     avg_returns = avg_returns / len(stocks)
