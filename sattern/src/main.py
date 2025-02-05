@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 
 def run_fund_manager(ticker: str, start_date: datetime, end_date: datetime):
     period, max_diff = 10, 2
-    cache = True
 
     portfolio = trader.portfolio(10000, 0)
     prices = api.get_prices(ticker)
@@ -16,12 +15,10 @@ def run_fund_manager(ticker: str, start_date: datetime, end_date: datetime):
     p_news = process.process_news(ticker, news)
     p_insider_transactions = process.process_insider_transactions(insider_trades)
     p_sattern, sattern_action = process.sattern(prices["prices"], period, max_diff)
-    # for i in range(len(p_sattern)):
-    #     print(f"{p_sattern.index[i]}: Highlight: {p_sattern.iloc[i]['highlight']}, Sattern: {p_sattern.iloc[i]['sattern']}")
-    # display_obj = display.custom_plot(ticker, prices["prices"])
-    # display_obj.highlight(p_sattern["highlight"], period, max_diff, "yellow")
-    # display_obj.plot(p_sattern["sattern"], "sattern", "green")
-    # display_obj.show()
+    display_obj = display.custom_plot(ticker, prices["prices"])
+    display_obj.highlight(p_sattern["highlight"], period, max_diff, "yellow")
+    display_obj.plot(p_sattern["sattern"], "sattern", "green")
+    display_obj.show()
 
     actions = {
         "news": p_news,
