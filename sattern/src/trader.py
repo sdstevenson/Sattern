@@ -7,8 +7,10 @@ class portfolio():
         self.stock = stock
         self.display = display
 
-    def execute_trade(self, action: str, current_price: float, quantity: int = None, show: bool = False) -> int:
-        if quantity is None:
+    def execute_trade(self, action: Union[Dict, str], current_price: float, quantity: int = None, show: bool = False) -> int:
+        if isinstance(action, dict):
+            action, quantity = combine_signals(action, current_price)
+        elif quantity is None:
             # Set the amounts to buy
             strong_signal_quantity = 10000//current_price//2
             normal_signal_quantity = strong_signal_quantity//4
@@ -35,12 +37,12 @@ class portfolio():
 
         if show:
             print(f"{action} {quantity} @ {current_price}")
-        return quantity
+        return action, quantity
 
     def __str__(self) -> str:
         return f"Portfolio(cash={self.cash:.2f}, stock={self.stock})"
 
-def combine_signals(actions: Dict, curr_price: float):
+def combine_signals(actions: Dict, curr_price: float) -> tuple:
     # Set the amounts to buy
     strong_signal_quantity = 10000//curr_price
     normal_signal_quantity = strong_signal_quantity//2
@@ -49,7 +51,7 @@ def combine_signals(actions: Dict, curr_price: float):
 
     for metric in actions.keys():
         num_metrics += 1
-        metric_action = actions[metric]["action"]
+        metric_action = actions[metric]
         if metric_action == "Strong Buy":
             metric_avg += 1
         elif metric_action == "Buy":
@@ -58,6 +60,8 @@ def combine_signals(actions: Dict, curr_price: float):
             metric_avg -= 0.5
         elif metric_action == "Strong Sell":
             metric_avg -= 1
+
+    metric_avg /= num_metrics
     if metric_avg >= 0.8:
         quantity = strong_signal_quantity
         action = "Strong Buy"
@@ -73,5 +77,11 @@ def combine_signals(actions: Dict, curr_price: float):
     else:
         quantity = -1 * strong_signal_quantity
         action = "Strong Sell"
+
+    if False:
+        string = ""
+        for metric in actions.keys():
+            string += f"{metric}: {actions[metric]}"
+        print(f"\t{action} {quantity} -- Individual Actions: {string}\n")
 
     return action, quantity
