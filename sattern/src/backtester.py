@@ -140,13 +140,13 @@ class Backtester:
         return performance_df, total_growth
 
 def main():
-    start = datetime.now() - timedelta(days=3650)
+    start = datetime.now() - timedelta(days=365*4)
     end = datetime.now()
     all_data = {}
-    # stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
+    stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
     # stocks = ["NG=F", "BZ=F", "KC=F"]
-    stocks = ["ERJ"]
-    save_name = "commodities"
+    # stocks = ["ERJ"]
+    save_name = "Tech_stocks"
     avg_returns = 0
     for ticker in stocks:
         backtester = Backtester(ticker, start, end, 10000, True, 5)
