@@ -39,8 +39,8 @@ def get_prices(ticker: str) -> pd.DataFrame:
         "symbol": ticker,
         "outputsize": "full",
     }
-    file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_prices.json'
-    if not os.path.exists(file_path):
+    file_path = f'{Path("./sattern/src/data")}/{ticker}_prices_{datetime.now().strftime("%Y%m%d")}.json'
+    if not path_exists(file_path):
         print("Fetching prices from API")
         url = construct_url(**args)
         history = requests.get(url).json()
@@ -70,10 +70,11 @@ def get_news(ticker: str, start_date: datetime, end_date: datetime) -> Dict:
         "tickers": ticker,
         "time_from": start_date.strftime("%Y%m%dT%H%M"),
         "time_to": end_date.strftime("%Y%m%dT%H%M"),
-        "sort": "RELEVANCE",
+        "sort": "LATEST",
+        "limit": 1000,
     }
-    file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_news.json'
-    if not os.path.exists(file_path):
+    file_path = f'{Path("./sattern/src/data")}/{ticker}_news_{datetime.now().strftime("%Y%m%d")}.json'
+    if not path_exists(file_path):
         print("Fetching news from API")
         url = construct_url(**args)
         news = requests.get(url).json()
@@ -90,8 +91,8 @@ def get_insider_transactions(ticker: str) -> pd.DataFrame:
         "function": "INSIDER_TRANSACTIONS",
         "symbol": ticker
     }
-    file_path = f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_insider_transactions.json'
-    if not os.path.exists(file_path):
+    file_path = f'{Path("./sattern/src/data")}/{ticker}_insider_transactions_{datetime.now().strftime("%Y%m%d")}.json'
+    if not path_exists(file_path):
         print("Fetching insider transactions from API")
         url = construct_url(**args)
         insider_transactions = requests.get(url).json()
@@ -127,3 +128,10 @@ def construct_url(**args) -> str:
         url += f"{arg}={args[arg]}&"
     url += f"apikey={os.getenv('STOCK_API_KEY')}"
     return url
+
+def path_exists(file_path: str) -> bool:
+    date_range = [(datetime.now(timezone.utc) - timedelta(days=i)).strftime('%Y%m%d') for i in range(6)]
+    for date in date_range:
+        if os.path.exists(file_path.replace(datetime.now().strftime("%Y%m%d"), date)):
+            return True
+    return False
