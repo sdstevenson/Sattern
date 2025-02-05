@@ -4,6 +4,11 @@ from typing import Dict, Tuple, List
 from datetime import timedelta, timezone
 
 def process_news(ticker: str, news_data: Dict) -> Dict:
+    if news_data is None:
+        return {
+            "top_news": [],
+            "action": "Hold"
+        }
     # Get the average sentiment, weighted by the relevance score
     total_relevance = 0
     total_sentiment = 0
