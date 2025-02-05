@@ -6,25 +6,13 @@ import json
 from pathlib import Path
 import pandas as pd
 from typing import Dict
-from sattern.src.tools.trader import portfolio
+from sattern.src.trader import portfolio
 from openai import OpenAIError
+from datetime import datetime
 
 load_dotenv()
 
-def process_data(df: pd.DataFrame) -> Dict:
-    """Extract relvant data from df."""
-
-    data = {
-        "prices": df["prices"].dropna(),
-        "sattern_highlight": df["sattern_highlight"].dropna(),
-        "sattern": df["sattern"].dropna()
-    }
-
-    return data
-
 def run_llm(ticker: str, df: pd.DataFrame, actions: Dict[str, str], portfolio: portfolio) -> Dict:
-    data = process_data(df)
-
     format_rules = [{
         "type": "function",
         "function": {
@@ -37,9 +25,9 @@ def run_llm(ticker: str, df: pd.DataFrame, actions: Dict[str, str], portfolio: p
                     "action": {"type": "string"},
                     "quantity": {"type": "integer"},
                     "thought_process": {"type": "string"},
-                    "news": {"type": "string"},
+                    "news_analysis": {"type": "string"},
                 },
-                "required": ["prediction", "action", "quantity", "thought_process", "news"],
+                "required": ["prediction", "action", "quantity", "thought_process", "news_analysis"],
                 "additionalProperties": False,
             }
         }
@@ -76,22 +64,19 @@ def run_llm(ticker: str, df: pd.DataFrame, actions: Dict[str, str], portfolio: p
 
             Based on the analysis and stock data given below, generate a prediction following the format in `output_prediction` of what action I should take, the quantity of stock to perform that action on, an what stock price the stock will hit next. 
 
-            Here are the start dates of certain periods where the stock behaved similarly to how it is moving now, with the data following each date the difference between these periods and the most recent period of data {data["sattern_highlight"]}.
+            Here are the start dates of certain periods where the stock behaved similarly to how it is moving now, with the data following each date the difference between these periods and the most recent period of data {actions['sattern']['sim_periods']}.
             Compare the given periods to the most recent stock price behavior. Use the behavior of the stock following the periods given to inform a predicion of what stock price the stock will hit in 10 days.
 
-            A custom algorithm predicts the price will follow this behavior:
-                {data["sattern"]}
-            
             Here is a series of metrics and the action they recommend:
-                Sattern (custom algorithm): {actions["sattern"]["action"]}
-                Based on news: {actions["news"]["action"]}
-                Insider trades: {actions["insider_trades"]["action"]}
+                Sattern (custom algorithm): {actions['sattern']['action']}, and the price will hit {actions['sattern']['price_prediction']} in 10 days.
+                Based on news: {actions['news']['action']}
+                Insider trades: {actions['insider_transactions']['action']}
 
             Here are some current articles relating to this stock. Read and analyze these to inform your prediction: 
-                {actions["news"]["top_news"]}
+                {actions['news']['top_news']}
 
-            Here is the stock price over time:
-                {data["prices"]}.
+            Here is the stock price over the last week:
+                {df['prices'][:7]}.
 
             Fill out all fields of the `output_prediction` tool and return.
             """
@@ -116,7 +101,7 @@ def run_llm(ticker: str, df: pd.DataFrame, actions: Dict[str, str], portfolio: p
         response = completion.choices[0].message.tool_calls[0].function.arguments
         parsed_response = json.loads(response)
 
-        with open(f'{Path("./sattern/src/data")}/AI_RESPONSE.json', 'w') as f:
+        with open(f'{Path("./sattern/src/data")}/{ticker}_{datetime.now().strftime("%Y%m%d")}_AI_RESPONSE.json', 'w') as f:
             json.dump(parsed_response, f, indent=4)
         return parsed_response
     except OpenAIError as e:
