@@ -9,6 +9,10 @@ def process_news(ticker: str, news_data: Dict) -> Dict:
     total_sentiment = 0
     top_news = []
     for article in news_data["feed"]:
+        # Only analyze articles from the past 30 days
+        article_time = pd.to_datetime(article['time_published'], format='%Y%m%dT%H%M%S', utc=True)
+        if article_time < pd.Timestamp.now(tz=timezone.utc) - timedelta(days=30):
+            break
         for rating in article["ticker_sentiment"]:
             if rating["ticker"] == ticker:
                 relevance = float(rating["relevance_score"])
