@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Union, Tuple, Dict
+from typing import Union, Tuple, Dict, List
 import pandas as pd
 import matplotlib.pyplot as plt
 from sattern.src import api, process
@@ -27,7 +27,7 @@ class Backtester:
         self.portfolio_values = []
 
         self.prices: pd.DataFrame = api.get_prices(ticker)
-        # self.news: Dict = api.get_news(ticker)
+        self.news: Dict = api.get_news(ticker, start_date, end_date)
 
     def run_backtesting(self):
         dates = pd.date_range(self.start_date, self.end_date, freq="B")
@@ -43,26 +43,24 @@ class Backtester:
             curr_start_date = (curr_date - timedelta(days=730))
             # Only pass in relevant data
             test_df = self.prices.loc[curr_date:curr_start_date].copy()
-            # filtered_news = []
-            # test_news = json.loads(json.dumps(self.news))
-            # for article in self.news["feed"]:
-            #     time_published = datetime.strptime(article["time_published"], "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc)
-            #     if time_published < curr_date:
-            #         filtered_news.append(article)
-            # test_news["feed"] = filtered_news
+            filtered_news: Dict[str, List] = {"feed": []}
+            for article in self.news["feed"]:
+                time_published = datetime.strptime(article["time_published"], "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc)
+                if time_published < curr_date:
+                    filtered_news["feed"].append(article)
 
-            # p_news = process.process_news(self.ticker, test_news)
+            p_news = process.process_news(self.ticker, filtered_news)
             # p_insider_transactions = process.process_insider_transactions(insider_trades)
             p_sattern, sattern_action = process.sattern(test_df["prices"])
 
             actions = {
-                # "news": p_news,
+                'news': p_news['action'],
                 # "insider_transactions": p_insider_transactions,
-                "sattern": sattern_action
+                'sattern': sattern_action['action'],
             }
 
             curr_price = test_df.iloc[0]['prices']
-            executed_quantity = self.portfolio.execute_trade(action=actions['sattern']['action'], current_price=curr_price)
+            executed_action, executed_quantity = self.portfolio.execute_trade(action=actions, current_price=curr_price)
 
             total_value = self.portfolio.cash + self.portfolio.stock * curr_price
             self.portfolio_values.append(
@@ -72,7 +70,7 @@ class Backtester:
 
             if self.display:
                 print(
-                    f"{curr_date.strftime('%Y-%m-%d'):<12} {self.ticker:<6} {actions['sattern']['action']:<6} {executed_quantity:>8} {curr_price:>8.2f} "
+                    f"{curr_date.strftime('%Y-%m-%d'):<12} {self.ticker:<6} {executed_action:<6} {executed_quantity:>8} {curr_price:>8.2f} "
                     f"{self.portfolio.cash:>12.2f} {self.portfolio.stock:>8} {total_value:>12.2f}"
                 )
 
@@ -143,10 +141,10 @@ def main():
     start = datetime.now() - timedelta(days=365*4)
     end = datetime.now()
     all_data = {}
-    stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
+    # stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
     # stocks = ["NG=F", "BZ=F", "KC=F"]
-    # stocks = ["ERJ"]
-    save_name = "Tech_stocks"
+    stocks = ["ERJ"]
+    save_name = "Testing"
     avg_returns = 0
     for ticker in stocks:
         backtester = Backtester(ticker, start, end, 10000, True, 5)
