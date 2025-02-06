@@ -122,6 +122,38 @@ def get_insider_transactions(ticker: str) -> pd.DataFrame:
             df = pd.read_json(path_or_buf=f, orient='records')
     return df
 
+def get_commodity_prices(ticker: str) -> pd.DataFrame:
+    args = {
+        "function": ticker,
+        "interval": "daily",
+    }
+    file_path = f'{Path("./sattern/src/data")}/{ticker}_prices_{datetime.now().strftime("%Y%m%d")}.json'
+    if not path_exists(file_path):
+        print("Fetching commodoties prices from API")
+        url = construct_url(**args)
+        prices = requests.get(url).json()
+        data = []
+        for day in prices["data"]:
+            try:
+                data.append(
+                    {
+                    "date": datetime.strptime(day['date'], '%Y-%m-%d').replace(tzinfo=timezone.utc),
+                    "prices": float(day['value']),
+                    }
+                )
+            except ValueError:
+                pass
+        df = pd.DataFrame(data)
+        df.set_index("date", inplace=True)
+        with open(file_path, 'w') as f:
+            df.to_json(path_or_buf=f, orient='columns', date_format='iso')
+    else:
+        with open(file_path, 'r') as f:
+            df = pd.read_json(path_or_buf=f, orient='columns')
+        df.index = pd.to_datetime(df.index, format='%Y-%m-%d').tz_convert(tz=timezone.utc)
+
+    return df
+
 def construct_url(**args) -> str:
     url = f'https://www.alphavantage.co/query?'
     for arg in args.keys():
