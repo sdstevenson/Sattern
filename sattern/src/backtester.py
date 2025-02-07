@@ -139,10 +139,22 @@ class Backtester:
             graph.plot(performance_df[["Portfolio Value"]], "Portfolio Value ($)", "green")
             graph.show()
 
-        return performance_df, total_growth
+        return total_growth
+
+    def plot_old_performance(self, file_name:str, ticker:str):
+        file_path = f'{Path("./sattern/src/backtesting_results")}/{file_name}'
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        df = pd.DataFrame(data[ticker]).T
+        df.index = pd.to_datetime(df.index, utc=True)
+        price_subset = self.prices.loc[self.end_date:self.start_date]['prices']
+        price_subset = (price_subset / price_subset.iloc[-1]) * self.init_capital
+        graph = display.custom_plot(self.ticker, price_subset)
+        graph.plot(df['Portfolio Value'], "Portfolio Value ($)", "green")
+        graph.show()
 
 def main():
-    start = datetime.now() - timedelta(days=365*10)
+    start = datetime.now() - timedelta(days=365*4)
     end = datetime.now()
     all_data = {}
     # stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
@@ -157,7 +169,10 @@ def main():
         backtester.run_backtesting()
         df, total_return = backtester.analyze_performance()
         avg_returns += total_return
-        all_data[ticker] = df.dropna().to_dict()
+        all_data[ticker] = {
+            date.strftime('%Y-%m-%d'): data 
+            for date, data in df.dropna().to_dict(orient='index').items()
+        }
 
     avg_returns = avg_returns / len(stocks)
     print(f"\nAverage returns: {avg_returns:.2f}%")
