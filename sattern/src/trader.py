@@ -65,10 +65,10 @@ def combine_signals(actions: Dict, curr_price: float) -> tuple:
     if metric_avg >= 0.8:
         quantity = strong_signal_quantity
         action = "Strong Buy"
-    elif metric_avg >= 0.1:
+    elif metric_avg >= 0.25:
         quantity = normal_signal_quantity
         action = "Buy"
-    elif metric_avg > -0.1:
+    elif metric_avg > -0.25:
         quantity = 0
         action = "Hold"
     elif metric_avg > -0.8:

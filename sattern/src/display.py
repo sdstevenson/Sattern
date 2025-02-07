@@ -44,4 +44,5 @@ class custom_plot():
         self.ax.set_ylabel('Value')
 
     def show(self):
+        self.ax.legend()
         pyplot.show()

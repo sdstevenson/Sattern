@@ -2,17 +2,16 @@ from datetime import datetime, timedelta, timezone
 from typing import Union, Tuple, Dict, List
 import pandas as pd
 import matplotlib.pyplot as plt
-from sattern.src import api, process
-from sattern.src.trader import portfolio
+from sattern.src import api, process, trader, display
 from pathlib import Path
 import json
 
 
 class Backtester:
-    def __init__(self, ticker: str, start_date: datetime, end_date: datetime, init_capital: float, display: bool, period):
+    def __init__(self, ticker: str, start_date: datetime, end_date: datetime, init_capital: float, display: bool, periods: List[int], commodity: bool = False):
         self.ticker = ticker
         self.display = display
-        self.period = period
+        self.periods = periods
 
         if start_date > end_date:
             start_date, end_date = end_date, start_date
@@ -22,12 +21,17 @@ class Backtester:
         self.end_date = end_date.replace(tzinfo=timezone.utc)
 
         self.init_capital = init_capital
-        self.portfolio: portfolio = portfolio(init_capital)
+        self.portfolio: trader.portfolio = trader.portfolio(init_capital)
         self.portfolio_value = 0
         self.portfolio_values = []
 
-        self.prices: pd.DataFrame = api.get_prices(ticker)
-        self.news: Dict = api.get_news(ticker, start_date, end_date)
+        self.commodity: bool = commodity
+
+        if commodity:
+            self.prices: pd.DataFrame = api.get_commodity_prices(ticker)
+        else:
+            self.prices: pd.DataFrame = api.get_prices(ticker)
+            self.news: Dict = api.get_news(ticker, start_date, end_date)
 
     def run_backtesting(self):
         dates = pd.date_range(self.start_date, self.end_date, freq="B")
@@ -41,23 +45,23 @@ class Backtester:
 
         for curr_date in dates:
             curr_start_date = (curr_date - timedelta(days=730))
-            # Only pass in relevant data
             test_df = self.prices.loc[curr_date:curr_start_date].copy()
-            filtered_news: Dict[str, List] = {"feed": []}
-            for article in self.news["feed"]:
-                time_published = datetime.strptime(article["time_published"], "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc)
-                if time_published < curr_date:
-                    filtered_news["feed"].append(article)
 
-            p_news = process.process_news(self.ticker, filtered_news)
-            # p_insider_transactions = process.process_insider_transactions(insider_trades)
-            p_sattern, sattern_action = process.sattern(test_df["prices"])
-
-            actions = {
-                'news': p_news['action'],
-                # "insider_transactions": p_insider_transactions,
-                'sattern': sattern_action['action'],
-            }
+            actions = {}
+            for period in self.periods:
+                p_sattern, sattern_action = process.sattern(test_df["prices"], period)
+                actions[f"sattern_{period}"] = sattern_action['action']
+            if not self.commodity:
+                # Commodoties dont have insider trading or news data
+                filtered_news: Dict[str, List] = {"feed": []}
+                for article in self.news["feed"]:
+                    time_published = datetime.strptime(article["time_published"], "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc)
+                    if time_published < curr_date:
+                        filtered_news["feed"].append(article)
+                p_news = process.process_news(self.ticker, filtered_news)
+                # p_insider_transactions = process.process_insider_transactions(insider_trades)
+                actions['news'] = p_news['action']
+                # actions['insider_transactions'] = p_insider_transactions['action']
 
             curr_price = test_df.iloc[0]['prices']
             executed_action, executed_quantity = self.portfolio.execute_trade(action=actions, current_price=curr_price)
@@ -75,7 +79,9 @@ class Backtester:
                 )
 
     def analyze_performance(self) -> Tuple[pd.DataFrame, float]:
-        performance_df = pd.DataFrame(self.portfolio_values).set_index("Date")
+        performance_df = pd.DataFrame(self.portfolio_values)
+        performance_df['Date'] = pd.to_datetime(performance_df['Date'], utc=True)
+        performance_df.set_index('Date', inplace=True)
 
         # Calculate total return
         total_return = (self.portfolio_value - self.init_capital) / self.init_capital * 100
@@ -87,7 +93,7 @@ class Backtester:
 
         # Ensure dates are valid
         attempts = 0
-        while attempts < 4:
+        while attempts < 10:
             try:
                 start_price = self.prices.loc[self.start_date]['prices']
                 break
@@ -95,7 +101,7 @@ class Backtester:
                 self.start_date = self.start_date - timedelta(days=1)
                 attempts += 1
         attempts = 0
-        while attempts < 4:
+        while attempts < 10:
             try:
                 end_price = self.prices.loc[self.end_date]['prices']
                 break
@@ -127,27 +133,27 @@ class Backtester:
         print(f"Maximum Drawdown: {max_drawdown * 100:.2f}%")
 
         if self.display:
-            # Plot the portfolio value over time
-            performance_df["Portfolio Value"].plot(
-                title="Portfolio Value Over Time", figsize=(12, 6)
-            )
-            plt.ylabel("Portfolio Value ($)")
-            plt.xlabel("Date")
-            plt.show()
+            price_subset = self.prices.loc[self.end_date:self.start_date]['prices']
+            price_subset = (price_subset / price_subset.iloc[-1]) * self.init_capital
+            graph = display.custom_plot(self.ticker, price_subset)
+            graph.plot(performance_df[["Portfolio Value"]], "Portfolio Value ($)", "green")
+            graph.show()
 
         return performance_df, total_growth
 
 def main():
-    start = datetime.now() - timedelta(days=365*4)
+    start = datetime.now() - timedelta(days=365*10)
     end = datetime.now()
     all_data = {}
     # stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
     # stocks = ["NG=F", "BZ=F", "KC=F"]
+    # stocks = ["WTI", "NATURAL_GAS", "COFFEE"]
     stocks = ["ERJ"]
+    # stocks = ["NG=F"]
     save_name = "Testing"
     avg_returns = 0
     for ticker in stocks:
-        backtester = Backtester(ticker, start, end, 10000, True, 5)
+        backtester = Backtester(ticker, start, end, 10000, display=True, periods=[5, 10, 20], commodity=False)
         backtester.run_backtesting()
         df, total_return = backtester.analyze_performance()
         avg_returns += total_return
