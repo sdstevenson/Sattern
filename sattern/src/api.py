@@ -39,8 +39,8 @@ def get_prices(ticker: str) -> pd.DataFrame:
         "symbol": ticker,
         "outputsize": "full",
     }
-    file_path = f'{Path("./sattern/src/data")}/{ticker}_prices_{datetime.now().strftime("%Y%m%d")}.json'
-    if not path_exists(file_path):
+    file_path = path_exists(ticker, "prices")
+    if file_path is None:
         print("Fetching prices from API")
         url = construct_url(**args)
         history = requests.get(url).json()
@@ -55,7 +55,7 @@ def get_prices(ticker: str) -> pd.DataFrame:
             )
         df = pd.DataFrame(data)
         df.set_index("date", inplace=True)
-        with open(file_path, 'w') as f:
+        with open(f'{Path("./sattern/src/data")}/{ticker}_prices_{datetime.now().strftime("%Y%m%d")}.json', 'w') as f:
             df.to_json(path_or_buf=f, orient='columns', date_format='iso')
     else:
         with open(file_path, 'r') as f:
@@ -73,12 +73,12 @@ def get_news(ticker: str, start_date: datetime, end_date: datetime) -> Dict:
         "sort": "LATEST",
         "limit": 1000,
     }
-    file_path = f'{Path("./sattern/src/data")}/{ticker}_news_{datetime.now().strftime("%Y%m%d")}.json'
-    if not path_exists(file_path):
+    file_path = path_exists(ticker, "news")
+    if file_path is None:
         print("Fetching news from API")
         url = construct_url(**args)
         news = requests.get(url).json()
-        with open(file_path, 'w') as f:
+        with open(f'{Path("./sattern/src/data")}/{ticker}_news_{datetime.now().strftime("%Y%m%d")}.json', 'w') as f:
             json.dump(news, f)
     else:
         with open(file_path, 'r') as f:
@@ -91,14 +91,14 @@ def get_insider_transactions(ticker: str) -> pd.DataFrame:
         "function": "INSIDER_TRANSACTIONS",
         "symbol": ticker
     }
-    file_path = f'{Path("./sattern/src/data")}/{ticker}_insider_transactions_{datetime.now().strftime("%Y%m%d")}.json'
-    if not path_exists(file_path):
+    file_path = path_exists(ticker, "insider_transactions")
+    if file_path is None:
         print("Fetching insider transactions from API")
         url = construct_url(**args)
         insider_transactions = requests.get(url).json()
         if insider_transactions["data"] == []:
             print(f"No insider transactions found for {ticker}")
-            with open(file_path, 'w') as f:
+            with open(f'{Path("./sattern/src/data")}/{ticker}_insider_transactions_{datetime.now().strftime("%Y%m%d")}.json', 'w') as f:
                 pass
             return None
         data = []
@@ -112,7 +112,7 @@ def get_insider_transactions(ticker: str) -> pd.DataFrame:
                 }
             )
         df = pd.DataFrame(data)
-        with open(file_path, 'w') as f:
+        with open(f'{Path("./sattern/src/data")}/{ticker}_insider_transactions_{datetime.now().strftime("%Y%m%d")}.json', 'w') as f:
             df.to_json(path_or_buf=f, orient='records', date_format='iso')
     else:
         with open(file_path, 'r') as f:
@@ -127,8 +127,8 @@ def get_commodity_prices(ticker: str) -> pd.DataFrame:
         "function": ticker,
         "interval": "daily",
     }
-    file_path = f'{Path("./sattern/src/data")}/{ticker}_prices_{datetime.now().strftime("%Y%m%d")}.json'
-    if not path_exists(file_path):
+    file_path = path_exists(ticker, "prices")
+    if file_path is None:
         print("Fetching commodoties prices from API")
         url = construct_url(**args)
         prices = requests.get(url).json()
@@ -145,7 +145,7 @@ def get_commodity_prices(ticker: str) -> pd.DataFrame:
                 pass
         df = pd.DataFrame(data)
         df.set_index("date", inplace=True)
-        with open(file_path, 'w') as f:
+        with open(f'{Path("./sattern/src/data")}/{ticker}_prices_{datetime.now().strftime("%Y%m%d")}.json', 'w') as f:
             df.to_json(path_or_buf=f, orient='columns', date_format='iso')
     else:
         with open(file_path, 'r') as f:
@@ -161,9 +161,12 @@ def construct_url(**args) -> str:
     url += f"apikey={os.getenv('STOCK_API_KEY')}"
     return url
 
-def path_exists(file_path: str) -> bool:
+def path_exists(ticker: str, name: str) -> str:
+    file_path = f'{Path("./sattern/src/data")}/{ticker}_{name}_'
+    # {datetime.now().strftime("%Y%m%d")}.json
     date_range = [(datetime.now(timezone.utc) - timedelta(days=i)).strftime('%Y%m%d') for i in range(6)]
     for date in date_range:
-        if os.path.exists(file_path.replace(datetime.now().strftime("%Y%m%d"), date)):
-            return True
-    return False
+        if os.path.exists(file_path + date + ".json"):
+            return file_path + date + ".json"
+    print(f"File not found: {ticker} // {name}")
+    return None
