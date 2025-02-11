@@ -169,15 +169,15 @@ def sattern(df:pd.DataFrame, period:int=10, max_diff:int=2) -> Tuple[pd.DataFram
         "sim_periods": similar_periods,
         "price_prediction": sim_period_price_prediction[-1]
     }
-    if abs(percent_change) < 0.02:
+    if abs(percent_change) <= 0.02:
         sattern_action["action"] = "Hold"
     elif percent_change > 0.02:
         if percent_change > 0.10:
             sattern_action["action"] = "Strong Buy"
         else:
             sattern_action["action"] = "Buy"
-    elif percent_change < 0.02:
-        if percent_change < 0.10:
+    else:
+        if percent_change < -0.10:
             sattern_action["action"] = "Strong Sell"
         else:
             sattern_action["action"] = "Sell"
