@@ -30,13 +30,13 @@ class portfolio():
                 # Get rid of all short positions
                 for entry_price, short_quantity in list(self.short_positions.items()):
                     profit = short_quantity * (entry_price - current_price)
-                    self.cash += short_quantity * current_price
+                    self.cash += profit + short_quantity * entry_price
                     self.short_stock -= short_quantity
                     if self.display:
                         if profit < 0:
-                            print(f"\tClosing short position {short_quantity} @ {current_price} for a loss of {profit:.2f}")
+                            print(f"\tClosed short -- {short_quantity} @ {current_price} for a loss of {profit:.2f} ({short_quantity}*({entry_price}-{current_price}))")
                         else:
-                            print(f"\tClosing short position {short_quantity} @ {current_price} for a profit of {profit:.2f}")
+                            print(f"\tClosed short -- {short_quantity} @ {current_price} for a profit of {profit:.2f} ({short_quantity}*({entry_price}-{current_price}))")
                     self.short_positions.pop(entry_price)
                 if self.short_stock != 0 or self.short_positions != {}:
                     raise ValueError("Error: Short positions not cleared.")
@@ -48,7 +48,7 @@ class portfolio():
             self.stock += tradeable_qty
             self.cash -= tradeable_qty * current_price
             if self.display:
-                print(f"\tOpened buy position {tradeable_qty} @ {current_price}")
+                print(f"\tOpened buy -- {tradeable_qty} @ {current_price}")
 
         elif "Sell" in action:
             sell_qty = quantity  # treat quantity as the intended number of shares to sell (a positive number)
@@ -57,7 +57,7 @@ class portfolio():
             self.stock -= long_sell_qty
             self.cash += long_sell_qty * current_price
             if self.display and long_sell_qty > 0:
-                print(f"\tClosing buy position {long_sell_qty} @ {current_price}")
+                print(f"\tClosed buy -- {long_sell_qty} @ {current_price}")
 
             # If the order is larger than your long position and shorting is enabled
             remainder = sell_qty - long_sell_qty
@@ -71,14 +71,15 @@ class portfolio():
                     self.short_stock += remainder
                     self.cash -= remainder * current_price
                     if self.display:
-                        print(f"\tOpened short position {remainder} @ {current_price}")
+                        print(f"\tOpened short position -- {remainder} @ {current_price}")
 
         return action, quantity
 
     def total_value(self, current_price: float) -> float:
         short_value = 0
         for entry_price, short_quantity in self.short_positions.items():
-            short_value += short_quantity * (entry_price - current_price) + short_quantity * current_price
+            proft = short_quantity * (entry_price - current_price)
+            short_value += proft + short_quantity * entry_price
         return self.cash + self.stock * current_price + short_value
 
     def __str__(self) -> str:
