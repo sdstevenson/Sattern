@@ -21,7 +21,7 @@ class Backtester:
         self.end_date = end_date.replace(tzinfo=timezone.utc)
 
         self.init_capital = init_capital
-        self.portfolio: trader.portfolio = trader.portfolio(init_capital)
+        self.portfolio: trader.portfolio = trader.portfolio(init_capital, display=True, enable_shorting=True)
         self.portfolio_value = 0
         self.portfolio_values = []
 
@@ -38,8 +38,8 @@ class Backtester:
 
         if self.display:
             print("\nStarting backtest...")
-            print(f"{'Date':<12} {'Ticker':<6} {'Action':<6} {'Quantity':>8} {'Price':>8} {'Cash':>12} {'Stock':>8} {'Total Value':>12}")
-            print("-" * 100)
+            print(f"{'Date':<12} {'Ticker':<6} {'Action':<6} {'Quantity':>8} {'Price':>8} {'Cash':>12} {'Stock':>8} {'Shorted Stock':>8} {'Total Value':>12}")
+            print("-" * 110)
         else:
             print(f"\nStarting Backtest on {self.ticker}...")
 
@@ -66,7 +66,7 @@ class Backtester:
             curr_price = test_df.iloc[0]['prices']
             executed_action, executed_quantity = self.portfolio.execute_trade(action=actions, current_price=curr_price)
 
-            total_value = self.portfolio.cash + self.portfolio.stock * curr_price
+            total_value = self.portfolio.total_value(curr_price)
             self.portfolio_values.append(
                 {"Date": curr_date.strftime('%Y-%m-%d'), "Portfolio Value": total_value}
             )
@@ -75,7 +75,7 @@ class Backtester:
             if self.display:
                 print(
                     f"{curr_date.strftime('%Y-%m-%d'):<12} {self.ticker:<6} {executed_action:<6} {executed_quantity:>8} {curr_price:>8.2f} "
-                    f"{self.portfolio.cash:>12.2f} {self.portfolio.stock:>8} {total_value:>12.2f}"
+                    f"{self.portfolio.cash:>12.2f} {self.portfolio.stock:>8} {self.portfolio.short_stock:>8} {total_value:>12.2f}"
                 )
 
     def analyze_performance(self) -> Tuple[pd.DataFrame, float]:
@@ -139,7 +139,7 @@ class Backtester:
             graph.plot(performance_df[["Portfolio Value"]], "Portfolio Value ($)", "green")
             graph.show()
 
-        return total_growth
+        return performance_df, total_growth
 
     def plot_old_performance(self, file_name:str, ticker:str):
         file_path = f'{Path("./sattern/src/backtesting_results")}/{file_name}'
@@ -154,14 +154,13 @@ class Backtester:
         graph.show()
 
 def main():
-    start = datetime.now() - timedelta(days=365*4)
+    start = datetime.now() - timedelta(days=365*2)
     end = datetime.now()
     all_data = {}
     # stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
     # stocks = ["NG=F", "BZ=F", "KC=F"]
     # stocks = ["WTI", "NATURAL_GAS", "COFFEE"]
-    stocks = ["ERJ"]
-    # stocks = ["NG=F"]
+    stocks = ["NG=F"]
     save_name = "Testing"
     avg_returns = 0
     for ticker in stocks:
