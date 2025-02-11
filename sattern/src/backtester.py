@@ -154,13 +154,13 @@ class Backtester:
         graph.show()
 
 def main():
-    start = datetime.now() - timedelta(days=365*2)
+    start = datetime.now() - timedelta(days=365*10)
     end = datetime.now()
     all_data = {}
     # stocks = ["AAPL", "NVDA", "MSFT", "AVGO", "ORCL", "CRM", "CSCO", "ACN", "NOW", "IBM"]
     # stocks = ["NG=F", "BZ=F", "KC=F"]
     # stocks = ["WTI", "NATURAL_GAS", "COFFEE"]
-    stocks = ["NG=F"]
+    stocks = ["BABA"]
     save_name = "Testing"
     avg_returns = 0
     for ticker in stocks:
