@@ -134,7 +134,6 @@ def sattern(df:pd.DataFrame, period:int=10, max_diff:int=2) -> Tuple[pd.DataFram
             curr_comp_diff = 0
 
     if len(similar_periods) == 0:
-        print("No similar patterns found")
         return pd.DataFrame(columns=["sattern", "highlight"]), {"action": "Hold"}
     else:
         # Combine similar periods into a DataFrame of start of period + difference to the most recent <period> days
