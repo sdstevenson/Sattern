@@ -4,9 +4,9 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 
 def run_fund_manager(ticker: str, start_date: datetime, end_date: datetime):
-    period, max_diff = 10, 2
+    period, max_diff = 10, 3
 
-    portfolio = trader.portfolio(10000, 0)
+    portfolio = trader.portfolio(10000, 0, display=True)
     prices = api.get_prices(ticker)
     news = api.get_news(ticker, start_date, end_date)
     insider_trades = api.get_insider_transactions(ticker)
@@ -26,11 +26,12 @@ def run_fund_manager(ticker: str, start_date: datetime, end_date: datetime):
         "sattern": sattern_action
     }
 
-    p_llm = llm.run_llm(ticker, prices, actions, portfolio)
-    print(f"AI Decision: {p_llm['action']} {p_llm['quantity']}, prediction {p_llm['prediction']}")
+    # p_llm = llm.run_llm(ticker, prices, actions, portfolio)
+    # print(f"AI Decision: {p_llm['action']} {p_llm['quantity']}, prediction {p_llm['prediction']}")
+    # portfolio.execute_trade(p_llm['action'], prices['prices'].iloc[0], p_llm['quantity'])
 
     # Execute trade
-    portfolio.execute_trade(p_llm['action'], prices['prices'].iloc[0], p_llm['quantity'], True)
+    portfolio.execute_trade(actions, prices['prices'].iloc[0])
     print(portfolio)
 
 def main():

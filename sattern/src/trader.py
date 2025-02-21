@@ -15,6 +15,8 @@ class portfolio():
     def execute_trade(self, action: Union[Dict, str], current_price: float, quantity: int = None) -> int:
         if isinstance(action, dict):
             action = combine_signals(action, current_price)
+            if self.display:
+                print(f"Combined action: {action}")
         # Set the amounts to buy
         strong_signal_quantity = 10000//current_price//2
         normal_signal_quantity = strong_signal_quantity//4

@@ -115,8 +115,9 @@ def sattern(df:pd.DataFrame, period:int=10, max_diff:int=2) -> Tuple[pd.DataFram
     index:int = len(df) - 2
 
     while(index > period):
-        curr_diff:float = curr_period_diff[curr_comp_length] - float(df.iloc[curr_comp_start - curr_comp_length - 1] - df.iloc[curr_comp_start - curr_comp_length])
-        curr_comp_diff += curr_diff
+        if not pd.isna(df.iloc[curr_comp_start-curr_comp_length]) and not pd.isna(df.iloc[curr_comp_start-curr_comp_length-1]):
+            curr_diff:float = curr_period_diff[curr_comp_length] - float(df.iloc[curr_comp_start - curr_comp_length - 1] - df.iloc[curr_comp_start - curr_comp_length])
+            curr_comp_diff += curr_diff
 
         curr_comp_length += 1
         index -= 1
@@ -143,17 +144,23 @@ def sattern(df:pd.DataFrame, period:int=10, max_diff:int=2) -> Tuple[pd.DataFram
         highlight_df.sort_index(inplace=True)
 
     # Use similar periods to predict the next stock price
-    period_difference: List[float] = []
+    period_difference: List[float] = [0.0] * period
     for i in range(period):
-        period_difference.append(0.0)
-        for x in range(len(similar_periods)):
-            index = similar_periods[x][0] - i
-            # Weight by how similar the period is to the to the most recent <period> days
-            period_difference[i] += (df.iloc[index] - df.iloc[index + 1]) * (max_diff - similar_periods[x][1])
-
-    # Normalize
-    total_difference = sum([abs(similar_periods[i][1]) for i in range(len(similar_periods))])
-    sim_period_difference = [price/total_difference for price in period_difference]
+        weighted_sum = 0.0
+        total_weight = 0.0
+        # for x in range(len(similar_periods)):
+        for start_index, diff_value in similar_periods:
+            # Calculate the historical day-to-day change at offset i
+            hist_index = start_index - i
+            if hist_index < 0 or hist_index + 1 >= len(df):
+                continue
+            change = df.iloc[hist_index] - df.iloc[hist_index + 1]
+            # Weight by similarity. We use (max_diff - abs(diff_value)) to avoid negative weights.
+            weight = max(max_diff - abs(diff_value), 0)
+            weighted_sum += change * weight
+            total_weight += weight
+        # If no weight was accumulated, default to zero change.
+        period_difference[i] = weighted_sum / total_weight if total_weight != 0 else 0.0
 
     # Calculate price movements and dates
     sim_period_price_prediction: List[float] = []
@@ -161,8 +168,8 @@ def sattern(df:pd.DataFrame, period:int=10, max_diff:int=2) -> Tuple[pd.DataFram
     sim_period_dates = sim_period_dates[0:period+1]
 
     sim_period_price_prediction.append(df.iloc[0])
-    for i in range(len(sim_period_difference)):
-        sim_period_price_prediction.append(sim_period_price_prediction[i] + sim_period_difference[i])
+    for i in range(len(period_difference)):
+        sim_period_price_prediction.append(sim_period_price_prediction[i] + period_difference[i])
 
     percent_change = (sim_period_price_prediction[-1] - df.iloc[0]) / df.iloc[0]
     sattern_action = {
