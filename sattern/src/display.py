@@ -26,8 +26,8 @@ class custom_plot():
 
         # Highlight the final period
         self.ax.axvspan(
-            self.prices.index[2*period],
             self.prices.index[period],
+            self.prices.index[0],
             color="red",
             alpha=0.3
         )
