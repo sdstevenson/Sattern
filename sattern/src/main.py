@@ -26,11 +26,12 @@ def run_fund_manager(ticker: str, start_date: datetime, end_date: datetime):
         "sattern": sattern_action
     }
 
-    p_llm = llm.run_llm(ticker, prices, actions, portfolio)
-    print(f"AI Decision: {p_llm['action']} {p_llm['quantity']}, prediction {p_llm['prediction']}")
+    # p_llm = llm.run_llm(ticker, prices, actions, portfolio)
+    # print(f"AI Decision: {p_llm['action']} {p_llm['quantity']}, prediction {p_llm['prediction']}")
 
     # Execute trade
-    portfolio.execute_trade(p_llm['action'], prices['prices'].iloc[0], p_llm['quantity'], True)
+    # portfolio.execute_trade(p_llm['action'], prices['prices'].iloc[0], p_llm['quantity'], True)
+    portfolio.execute_trade(actions, prices['prices'].iloc[0], show=True)
     print(portfolio)
 
 def main():
